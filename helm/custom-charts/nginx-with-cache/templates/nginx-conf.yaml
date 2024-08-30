@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.uniqueName }}-nginx-conf
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    pcre_jit on;
+    error_log /dev/stderr warn;
+    include /etc/nginx/modules/*.conf;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        server_tokens off;
+        client_max_body_size 1m;
+        sendfile on;
+        tcp_nopush on;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache shared:SSL:2m;
+        ssl_session_timeout 1h;
+        ssl_session_tickets off;
+        gzip on;
+        gzip_vary on;
+
+        fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=nginx-cache:100m inactive=60m use_temp_path=off;
+        fastcgi_cache_key "$scheme$request_method$host$request_uri";
+        fastcgi_cache_use_stale error timeout invalid_header updating http_500;
+        fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
+
+        include /etc/nginx/http.d/*.conf;
+    }

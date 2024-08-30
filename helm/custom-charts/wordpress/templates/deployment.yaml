@@ -1,0 +1,40 @@
+{{- range .Values.wordpressInstances }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-markitectos-wordpress
+spec:
+  {{- if not .autoscaling.enabled }}
+  replicas: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .name }}-markitectos-wordpress
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-markitectos-wordpress
+    spec:
+      containers:
+      - name: wordpress
+        image: wordpress:6.6.1-php8.3-fpm-alpine
+        ports:
+        - containerPort: 9000
+        envFrom:
+          - configMapRef:
+              name: {{ .name }}-wordpress-configmap
+        env:
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .name }}-db-pass
+                key: password
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+{{- end }}

@@ -1,0 +1,71 @@
+# INSTRUCTIONS:
+
+# 1.- Apply this deployment with the new PVC.
+
+# 2.- Remove the deployment where the original PVC is running.
+
+# 3.- Shell to the pod and copy all the data over. Run an additional file count for check.
+
+# $ cp -a /datastorage-origin/* /datastorage-destiny
+# ...
+# $ find /datastorage-origin -type f | wc -l
+# 1091
+# $ find /datastorage-destiny -type f | wc -l
+# 1091
+
+# 4.- Now you can simply remove the old PVC and repoint your mountPath.
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whoami-pvc
+  namespace: percona
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pvc-migrator
+  namespace: percona
+spec:
+  selector:
+    matchLabels:
+      app: pvc-migrator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: pvc-migrator
+    spec:
+      containers:
+        - name: pvc-migrator-app
+          image: ubuntu:16.04
+          command: ["/bin/sh"]
+          args: ["-c", "while true; do echo hello; sleep 10;done"]
+          volumeMounts:
+            - mountPath: "/datastorage-origin"
+              name: whoami-pv-storage
+            - mountPath: "/datastorage-destiny"
+              name: whoami-pv              
+      volumes:
+        - name: whoami-pv-storage
+          persistentVolumeClaim:
+            claimName: whoami-pvc-storage
+        - name: whoami-pv
+          persistentVolumeClaim:
+            claimName: whoami-pvc
+      # nodeSelector:
+      #   kubernetes.io/hostname: r7-11            
+
+
+

@@ -1,0 +1,88 @@
+## Info and Configs:
+# https://github.com/bitnami/charts/tree/main/bitnami/wordpress/#installing-the-chart
+# https://artifacthub.io/packages/helm/bitnami/wordpress
+# https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues/
+
+
+## Blog/Site Info
+wordpressUsername: maxitromer
+wordpressPassword: Maxi1465!
+wordpressEmail: maxitromer@gmail.com
+wordpressFirstName: Maxi
+wordpressLastName: Tromer
+wordpressBlogName: Test Blog!
+
+## Used to generate WordPress URLs
+wordpressScheme: https
+
+## Ingress Settings
+ingress:
+  enabled: true
+  hostname: t.markitectos.com
+  path: /
+  ingressClassName: traefik
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt-staging
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  tls: true
+  tlsWwwPrefix: true
+
+## Service Settings
+service:
+ type: ClusterIP
+
+clusterIP: None
+
+## Required to make Paypal Payments Plugin to work.
+hostAliases:
+  - ip: "168.205.123.10"
+    hostnames:
+      - "t.markitectos.com"
+
+## Resources
+resources:
+  limits: {}
+  requests:
+    memory: 
+    cpu: 
+
+## Update Strategy (Set it to `Recreate` if you use a PV that cannot be mounted on multiple pods)
+updateStrategy:
+  type: Recreate
+
+ ## Wordpress Motor Configs
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  accessModes:
+    - ReadWriteOnce
+  accessMode: ReadWriteOnce
+  size: 999999Gi
+
+volumePermissions:
+  enabled: true
+
+
+## Node Selector for Wordpress Motor  (use node labels here)
+nodeSelector:
+  kubernetes.io/hostname: vm-dietpi-k3s-12
+
+## Database Configs
+mariadb:
+  enabled: true
+  ## architecture: replication (Set as `standalone` by default)
+  auth:
+    rootPassword: "Maxi1465!"
+    database: bitnami_wordpress
+    username: bn_wordpress
+    password: "Maxi1465!"
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "local-path"
+      accessModes:
+        - ReadWriteOnce
+      size: 999999Gi
+    ## Node Selector for MariaDB Database (use node labels here)
+    nodeSelector:
+      kubernetes.io/hostname: vm-dietpi-k3s-12

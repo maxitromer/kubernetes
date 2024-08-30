@@ -1,0 +1,4 @@
+apiVersion: v2
+name: custom-nginx-with-cache
+description: A Helm chart for Nginx with fastCGI and Cache enabled
+version: 0.1.0

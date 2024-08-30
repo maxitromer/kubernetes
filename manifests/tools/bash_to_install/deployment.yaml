@@ -1,0 +1,16 @@
+kind: Deployment
+metadata:
+  name: John Doe
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: John Doe-app
+    spec:
+      containers:
+        - my-container: whoami-container
+          image: 'wordpress:{{6.4.1-php8.2-apache}}' # wordpress:6.4.1-php8.2-apache

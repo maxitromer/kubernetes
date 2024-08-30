@@ -1,0 +1,267 @@
+# Wordpress env variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whoami-wordpress-configmap
+  namespace: percona
+data:
+  WORDPRESS_DB_HOST: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306 # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
+  WORDPRESS_DB_NAME: whoami_markitectos
+  WORDPRESS_DB_USER: whoami_markitectos_user
+  WORDPRESS_TABLE_PREFIX: wp_
+  WORDPRESS_DEBUG: 'true' # defaults to disabled, non-empty value will enable WP_DEBUG in wp-config.php
+
+---
+
+## To create the password value in base 64 to set this secret
+# echo -n '<your_password>' | base64
+
+## Sets the Secret Password for whoami DB
+apiVersion: v1
+kind: Secret
+metadata:
+  name: whoami-db-pass
+  namespace: percona
+type: Opaque
+data:
+  password: TWF4aTE0NjUh
+
+---
+
+# nginx configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whoami-nginx-http-conf
+  namespace: percona
+data:
+  nginx.conf: |-
+    user  nginx;
+    worker_processes  auto;
+
+    error_log  /var/log/nginx/error.log notice;
+    pid        /var/run/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log  /var/log/nginx/access.log  main;
+
+        sendfile        on;
+        #tcp_nopush     on;
+
+        keepalive_timeout  65;
+
+        #gzip  on;
+
+        include /etc/nginx/conf.d/*.conf;
+    }
+
+---
+
+# nginx configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whoami-nginx-server-default-conf
+  namespace: percona
+data:
+  default.conf: |-
+    server {
+        listen 80 default_server;
+        root /var/www/html;
+        server_name  _;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$args;
+        }
+
+        location ~ \.php$ {
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_index index.php;
+            include fastcgi_params;
+            fastcgi_param   PATH_INFO       $fastcgi_path_info;
+            fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+      
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whoami-wp-content-pvc
+  namespace: percona
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+
+---  
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami-nginx-wordpress
+  namespace: percona
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: whoami-nginx-wordpress
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: whoami-nginx-wordpress
+    spec:
+      volumes:
+      - name: whoami-wp-content-pv
+        persistentVolumeClaim:
+          claimName: whoami-wp-content-pvc   
+      - name: whoami-nginx-conf
+        configMap:
+          name: whoami-nginx-http-conf
+      - name: whoami-nginx-default-conf
+        configMap:
+          name: whoami-nginx-server-default-conf
+      - name: shared-files
+        emptyDir: {}
+      containers:
+        - name: whoami-wordpress
+          image: wordpress:6.6.1-php8.3-fpm-alpine
+          imagePullPolicy : IfNotPresent
+          volumeMounts:
+            - name: shared-files
+              mountPath: /var/www/html
+            - mountPath: /var/www/html/wp-content
+              name: whoami-wp-content-pv
+          envFrom:
+            - configMapRef:
+                name: whoami-wordpress-configmap
+          env:
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: whoami-db-pass
+                  key: password
+        - name: whoami-nginx
+          image: nginx:1.27.0-alpine3.19-slim
+          imagePullPolicy : IfNotPresent
+          volumeMounts:
+          - name: shared-files
+            mountPath: /var/www/html
+          - mountPath: /var/www/html/wp-content
+            name: whoami-wp-content-pv
+          - mountPath: /var/www/html/wp-content/nginx.conf
+            subPath: nginx.conf
+            name: whoami-nginx-conf
+            readOnly: true 
+          - mountPath: /etc/nginx/conf.d
+            name: whoami-nginx-default-conf
+            readOnly: true
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: percona
+  name: whoami-nginx-wordpress
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: https
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: whoami-nginx-wordpress
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: whoami-default-headers
+  namespace: percona
+spec:
+  headers:
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 15552000
+    customFrameOptionsValue: SAMEORIGIN
+    customRequestHeaders:
+      X-Forwarded-Proto: https
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-ingress-route
+  namespace: percona
+  annotations: 
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`www.whoami.markitectos.com`) || Host(`whoami.markitectos.com`)
+      kind: Rule
+      services:
+        - name: whoami-nginx-wordpress
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: whoami-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+      middlewares:
+        - name: whoami-default-headers
+  tls:
+    secretName: whoami-markitectos-ssl-secret
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: whoami-markitectos-certificate
+  namespace: percona
+spec:
+  secretName: whoami-markitectos-ssl-secret
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  dnsNames:
+    - 'whoami.markitectos.com'
+    - 'www.whoami.markitectos.com'
+

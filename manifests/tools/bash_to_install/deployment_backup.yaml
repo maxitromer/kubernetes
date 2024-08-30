@@ -1,0 +1,16 @@
+kind: Deployment
+metadata:
+  name: {{whoami}}
+spec:
+  selector:
+    matchLabels:
+      app: {{whoami-app}}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{whoami}}-app
+    spec:
+      containers:
+        - {{name}}: whoami-container
+          image: 'wordpress:{{6.4.1-php8.2-apache}}' # wordpress:6.4.1-php8.2-apache

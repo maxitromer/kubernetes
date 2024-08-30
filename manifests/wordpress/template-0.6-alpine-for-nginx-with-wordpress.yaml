@@ -1,0 +1,215 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: percona
+  name: nginx-config
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    pcre_jit on;
+    error_log /dev/stderr warn;
+    include /etc/nginx/modules/*.conf;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        server_tokens off;
+        client_max_body_size 1m;
+        sendfile on;
+        tcp_nopush on;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache shared:SSL:2m;
+        ssl_session_timeout 1h;
+        ssl_session_tickets off;
+        gzip on;
+        gzip_vary on;
+
+        fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=WORDPRESS:100m inactive=60m use_temp_path=off;
+        fastcgi_cache_key "$scheme$request_method$host$request_uri";
+        fastcgi_cache_use_stale error timeout invalid_header updating http_500;
+        fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
+
+        include /etc/nginx/http.d/*.conf;
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: percona
+  name: nginx-default-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        root /var/www/html;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$args;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_index index.php;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_cache WORDPRESS;
+            fastcgi_cache_valid 60m;
+        }
+
+        location ~ /purge(/.*) {
+            fastcgi_cache_purge WORDPRESS "$scheme$request_method$host$1";
+        }
+
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+            expires max;
+            log_not_found off;
+        }
+    }
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: percona
+  name: nginx-wordpress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whoami-nginx-wordpress
+  template:
+    metadata:
+      labels:
+        app: whoami-nginx-wordpress
+    spec:
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+      - name: nginx-default-config
+        configMap:
+          name: nginx-default-config
+      - name: nginx-cache
+        emptyDir: {}
+      # - name: shared-files
+      #   emptyDir: {}
+      containers:
+      - name: nginx
+        image: alpine:3.18
+        ports:
+        - containerPort: 80
+        command: ["/bin/sh"]
+        args: ["-c", "apk add --no-cache nginx nginx-mod-http-cache-purge && nginx -g 'daemon off;'"]
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-default-config
+          mountPath: /etc/nginx/http.d/default.conf
+          subPath: default.conf
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        # - name: shared-files
+        #   mountPath: /var/www/html
+      - name: whoami-wordpress
+        image: wordpress:6.6.1-php8.3-fpm-alpine
+        imagePullPolicy : IfNotPresent
+        # volumeMounts:
+        #   - name: shared-files
+        #     mountPath: /var/www/html
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: percona
+  name: whoami-nginx-wordpress
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: https
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: whoami-nginx-wordpress
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: whoami-default-headers
+  namespace: percona
+spec:
+  headers:
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 15552000
+    customFrameOptionsValue: SAMEORIGIN
+    customRequestHeaders:
+      X-Forwarded-Proto: https
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-ingress-route
+  namespace: percona
+  annotations: 
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`www.whoami.markitectos.com`) || Host(`whoami.markitectos.com`)
+      kind: Rule
+      services:
+        - name: whoami-nginx-wordpress
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: whoami-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+      middlewares:
+        - name: whoami-default-headers
+  tls:
+    secretName: whoami-markitectos-ssl-secret
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: whoami-markitectos-certificate
+  namespace: percona
+spec:
+  secretName: whoami-markitectos-ssl-secret
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  dnsNames:
+    - 'whoami.markitectos.com'
+    - 'www.whoami.markitectos.com'
+
+
+---

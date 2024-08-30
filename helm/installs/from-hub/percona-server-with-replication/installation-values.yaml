@@ -1,0 +1,53 @@
+mysql:
+  clusterType: group-replication
+  autoRecovery: true
+  image:
+    repository: percona/percona-server
+    tag: 8.0.36-28
+  imagePullPolicy: Always
+  imagePullSecrets: []
+  # - name: private-registry-credentials
+  # initImage: percona/percona-server-mysql-operator:0.8.0
+
+  size: 3
+  resources:
+    requests:
+      memory: 512M
+    limits:
+      memory: 1G
+
+  volumeSpec:
+    pvc:
+      storageClassName: local-path
+      accessModes: 
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1G
+
+  nodeSelector:
+    kubernetes.io/arch: amd64
+    # disktype: ssd 
+
+proxy:
+  haproxy:
+    enabled: true
+    image:
+      repository: percona/haproxy
+      tag: 2.8.5
+    imagePullPolicy: Always
+
+    size: 3
+
+    resources:
+      requests:
+        memory: 1G
+        cpu: 600m
+      limits: {}
+
+    nodeSelector:
+      kubernetes.io/arch: amd64
+      # disktype: ssd
+
+backup:
+  enabled: false      

@@ -1,0 +1,68 @@
+## Info and Configs:
+# https://github.com/bitnami/charts/tree/main/bitnami/wordpress/#installing-the-chart
+# https://artifacthub.io/packages/helm/bitnami/wordpress
+# https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues/
+
+
+## Blog/Site Info
+wordpressUsername: maxitromer
+wordpressPassword: Maxi1465!
+wordpressEmail: maxitromer@gmail.com
+wordpressFirstName: Maxi
+wordpressLastName: Tromer
+wordpressBlogName: Test Blog!
+
+## Service Settings
+service:
+ type: ClusterIP
+
+## Ingress Settings
+ingress:
+  enabled: true
+  hostname: t.markitectos.com
+  path: /
+  ingressClassName: traefik
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt-staging
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  tls: true
+  tlsWwwPrefix: true
+
+ ## Wordpress Motor Configs
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  accessModes:
+    - ReadWriteMany
+  accessMode: ReadWriteMany
+  size: 5Gi
+
+## Database Settings
+mariadb:
+  enabled: false
+
+externalDatabase:
+  host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local # my-db-pxc-db-haproxy
+  port: 3306
+  user: t_markitectos_com_user
+  password: Maxi1465!
+  database: t_markitectos_com_db
+
+## WordPress Autoscaling configuration
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPU: 50
+  targetMemory: 50
+
+## Cache Settings
+
+wordpressConfigureCache: true
+memcached:
+  enabled: false
+
+externalCache:
+  host: memcached-ha.percona.svc.cluster.local
+  port: 11211

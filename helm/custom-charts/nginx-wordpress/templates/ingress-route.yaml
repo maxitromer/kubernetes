@@ -1,0 +1,25 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $.Values.global.uniqueName }}-ingress-route
+  namespace: {{ $.Values.global.namespace.name }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`{{ $domain.name }}`) || Host(`www.{{ $domain.name }}`){{ end }}
+      kind: Rule
+      services:
+        - name: {{ .Values.global.uniqueName }}-nginx-wordpress
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: {{ $.Values.global.uniqueName }}-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+      middlewares:
+        - name: {{ $.Values.global.uniqueName }}-default-headers
+  tls:
+    secretName: {{ $.Values.global.uniqueName }}-ssl-secret

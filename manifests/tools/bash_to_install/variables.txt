@@ -1,0 +1,4 @@
+whoami=John Doe
+whoami-app=my-app
+name=my-container
+image=wordpress:6.4.1-php8.2-apache

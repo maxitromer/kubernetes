@@ -1,0 +1,38 @@
+
+# Allowed values: standalone or high-availability
+architecture: "high-availability"
+# replicaCount: 3
+
+nodeSelector:
+  kubernetes.io/arch: amd64
+
+# Autoscaling  (requires architecture: "high-availability")
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPU: 10
+  targetMemory: 10
+
+service:
+  type: ClusterIP
+  port: 11211
+
+networkPolicy:
+  enabled: true
+  allowExternal: false
+  ingressNSMatchLabels:
+    access-memcached: "true"
+  ingressPodMatchLabels:
+    access-memcached: "true"
+
+# Ensures that the pods are scheduled on different nodes for better fault tolerance
+podAntiAffinity:
+  enabled: true
+  type: hard
+
+metrics:
+  enabled: true
+
+persistence:
+  enabled: false

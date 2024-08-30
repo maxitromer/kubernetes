@@ -1,0 +1,12 @@
+## To create the password value in base 64 to set this secret
+# echo -n '<your_password>' | base64
+
+## Sets the Secret Password for the DB
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.global.uniqueName }}-db-pass
+  namespace: {{ .Values.global.namespace.name }}
+type: Opaque
+data:
+  password: {{ .Values.wordpress.database.SecretPasswordKey }}

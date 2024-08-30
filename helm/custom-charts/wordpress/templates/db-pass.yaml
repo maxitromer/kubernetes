@@ -1,0 +1,15 @@
+{{- range .Values.wordpressInstances }}
+---
+## To create the password value in base 64 to set this secret
+# echo -n '<your_password>' | base64
+
+## Sets the Secret Password for whoami DB
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .name }}-db-pass
+  # namespace: percona
+type: Opaque
+data:
+  password: TWF4aTE0NjUh
+{{- end }}      

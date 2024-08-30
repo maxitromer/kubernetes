@@ -1,0 +1,32 @@
+# IMPORTANT NOTE
+# Run the next command to patch the ranched deployment after every upgrade:
+# kubectl patch deployment rancher -p '{"spec":{"template":{"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/arch","operator":"In","values":["arm64","amd64"]}]}]}}}}}}}' -n cattle-system
+
+# Fully qualified name to reach your Rancher server
+hostname: r.markitectos.com
+
+# Set a bootstrap password. If leave empty, a random password will be generated.
+bootstrapPassword: "maxi1465"
+
+# Number of Rancher server replicas. Setting to negative number will dynamically between 0 and the abs(replicas) based on available nodes.
+# of available nodes in the cluster
+replicas: 2
+
+# Set pod resource requests/limits for Rancher.
+resources: {}
+
+ingress:
+  tls:
+    # options: rancher, letsEncrypt, secret
+    source: letsEncrypt
+
+### LetsEncrypt config ###
+# ProTip: The production environment only allows you to register a name 5 times a week.
+#         Use staging until you have your config right.
+letsEncrypt:
+  email: maxitromer@gmail.com
+  environment: production # Valid options: "staging, production"
+  ingress:
+    # options: traefik, nginx
+    class: "traefik"
+

@@ -1,0 +1,277 @@
+## https://www.youtube.com/watch?v=n5dpQLqOfqM
+## https://github.com/ChristianLempa/boilerplates
+
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: whoami
+#   labels:
+#     name: whoami
+
+# ---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whoami-custom-php-ini
+  namespace: percona
+data:
+  custom-php.ini: |+
+    upload_max_filesize = 100M
+    post_max_size = 100M
+    memory_limit = 256M
+    max_execution_time = 600
+    max_input_vars = 1000
+    max_input_time = 400
+
+---
+
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: whoami-custom-apache-config
+#   namespace: percona
+# data:
+#   000-default.conf: |+
+#     <VirtualHost *:80>
+#         ServerName whoami.markitectos.com
+#         DocumentRoot /var/www/html
+#         <Directory /var/www/html>
+#             AllowOverride All
+#             Require all granted
+#         </Directory>
+#     </VirtualHost>
+
+# ---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whoami-pvc
+  namespace: percona
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+
+# Wordpress Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  namespace: percona
+spec:
+  selector:
+    matchLabels:
+      app: whoami-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: whoami-app
+    spec:
+      volumes:
+        - name: whoami-pv
+          persistentVolumeClaim:
+            claimName: whoami-pvc
+        - name: whoami-custom-php-ini
+          configMap:
+            name: whoami-custom-php-ini
+        # - name: whoami-custom-apache-config
+        #   configMap:
+        #     name: whoami-custom-apache-config            
+      # nodeSelector:
+      #   kubernetes.io/hostname: r7-11
+      hostAliases:
+      - ip: 168.205.123.10
+        hostnames:
+        - whoami.markitectos.com
+      # - ip: 127.0.0.1
+      #   hostnames:
+      #   - whoami.markitectos.com        
+      containers:
+        - name: whoami-container
+          image: 'wordpress:6.5.3-php8.3-apache' # wordpress:6.4.1-php8.2-apache
+          volumeMounts:
+            - mountPath: "/var/www/html/wp-content"
+              name: whoami-pv
+            - mountPath: /usr/local/etc/php/conf.d/custom-conf
+              name: whoami-custom-php-ini
+              readOnly: true
+            # - mountPath: /etc/apache2/sites-available
+            #   name: whoami-custom-apache-config
+            #   readOnly: true              
+            # - mountPath: "/other/path"
+            #   name: other-pv-storage
+            # - mountPath: "/other/path"
+            #   name: other-pv-storage                     
+          # resources:
+          #   requests:
+          #     memory: "256Mi" # Memory reserved
+          #     cpu: "500m" # CPU reserved
+          #   limits:
+          #      memory: "512Mi" # Maximum memory allowed
+          #      cpu: "1000m" # Maximum CPU allowed
+          env:
+            - name: WORDPRESS_DB_HOST
+              value: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306 # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
+            - name: WORDPRESS_DB_NAME # needs to already exist on the given MySQL server; it will not be created by the wordpress container
+              value: whoami_markitectos
+            - name: WORDPRESS_DB_USER
+              value: whoami_markitectos_user
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: whoami-whoami-pass
+                  key: password
+            - name: WORDPRESS_TABLE_PREFIX
+              value: wp_
+            - name: WORDPRESS_DEBUG # defaults to disabled, non-empty value will enable WP_DEBUG in wp-config.php
+              value: 'true'
+            - name: PHP_INI_SCAN_DIR
+              value: :/usr/local/etc/php/conf.d/custom-conf
+            - name: WORDPRESS_CONFIG_EXTRA
+              value: |
+                define( 'WP_HOME', 'https://' . $_SERVER['HTTP_HOST'] . '/' );
+                define( 'WP_SITEURL', 'https://' . $_SERVER['HTTP_HOST'] . '/' );
+                define( 'WP_AUTO_UPDATE_CORE', false );
+                define(  'WP_DEBUG_DISPLAY', false );
+                /* define('DISABLE_WP_CRON', true); */
+                @ini_set( 'display_errors', 0 );
+                /* define('FORCE_SSL_ADMIN', true); */
+                /* define('FORCE_SSL_LOGIN', true); */
+                $_SERVER['HTTPS']='on';
+          ports:
+            - containerPort: 80 
+          imagePullPolicy: Always # IfNotPresent or Always
+          livenessProbe: # Check if pod is alive, if not restart
+            failureThreshold: 6
+            httpGet:
+              path: /wp-admin/install.php
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          ##
+          ## TODO: We will have to figure out how to add a readiness probe that runs with this image that starts without install
+          ##
+          readinessProbe: # Check if pod is ready, and enable it to get traffic only when is ready
+           failureThreshold: 6
+           httpGet:
+             path: /wp-login.php
+             port: 80
+             scheme: HTTP
+           initialDelaySeconds: 30
+           periodSeconds: 30
+           successThreshold: 1
+           timeoutSeconds: 5
+
+---
+
+
+## To create the password value in base 64 to set this secret
+# echo -n '<your_password>' | base64
+
+## Sets the Secret Password for whoami DB
+apiVersion: v1
+kind: Secret
+metadata:
+  name: whoami-whoami-pass
+  namespace: percona  
+type: Opaque
+data:
+  password: TWF4aTE0NjUh
+
+
+---
+
+## https://github.com/dmancloud/traefik-cert-manager/blob/main/nginx/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-service
+  namespace: percona
+spec:
+  type: ClusterIP
+  selector:
+    app: whoami-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+
+---
+
+## https://github.com/dmancloud/traefik-cert-manager/blob/main/traefik/default-headers.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: default-headers
+  namespace: percona
+spec:
+  headers:
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 15552000
+    customFrameOptionsValue: SAMEORIGIN
+    customRequestHeaders:
+      X-Forwarded-Proto: https
+
+---      
+
+## https://github.com/dmancloud/traefik-cert-manager/blob/main/nginx/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-ingress-route
+  namespace: percona
+  annotations: 
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`www.whoami.markitectos.com`)
+      kind: Rule
+      services:
+        - name: whoami-service
+          port: 80
+      middlewares:
+        - name: default-headers
+    - match: Host(`whoami.markitectos.com`)
+      kind: Rule
+      services:
+        - name: whoami-service
+          port: 80
+      middlewares:
+        - name: default-headers
+  tls:
+    secretName: whoami-markitectos-ssl-secret
+
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: whoami-markitectos-certificate
+  namespace: percona
+spec:
+  secretName: whoami-markitectos-ssl-secret
+  issuerRef:
+    # name: letsencrypt-staging
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  dnsNames:
+    - 'whoami.markitectos.com'
+    - 'www.whoami.markitectos.com'

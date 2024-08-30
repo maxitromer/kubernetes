@@ -1,0 +1,17 @@
+global:
+  storageClass: "local-path"
+  redis:
+    password: ""
+
+cluster:
+ # NOTE: By default cluster.init will be set to true in order to initialize the Redis® Cluster in the first installation. If for testing purposes you only want to deploy or upgrade the nodes but avoiding the creation of the cluster you can set cluster.init to false.
+  init: false
+  externalAccess:
+    enabled: false
+
+usePassword: false
+## @param password Redis&reg; password (ignored if existingSecret set)
+## Defaults to a random 10-character alphanumeric string if not set and usePassword is true
+## ref: https://github.com/bitnami/containers/tree/main/bitnami/redis#setting-the-server-password-on-first-run
+##
+password: ""

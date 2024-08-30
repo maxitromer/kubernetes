@@ -1,0 +1,25 @@
+{{- if $.Values.wordpress.customPHPini.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  custom-php.ini: |+
+    upload_max_filesize = {{ .Values.wordpress.customPHPini.uploadMaxFilesize }}
+    post_max_size = {{ .Values.wordpress.customPHPini.postMaxSize }}
+    memory_limit = {{ .Values.wordpress.customPHPini.memoryLimit }}
+    max_execution_time = {{ .Values.wordpress.customPHPini.maxExecutionTime }}
+    max_input_vars = {{ .Values.wordpress.customPHPini.maxInputVars }}
+    max_input_time = {{ .Values.wordpress.customPHPini.maxInputTime }}
+    {{- if $.Values.wordpress.enableMemcached }}
+    extension=memcached.so
+    ;extension=memcache.so
+    memcache.allow_failover = 1
+    memcache.max_failover_attempts = 20
+    memcache.chunk_size = 32768
+    memcache.default_port = 11211
+    memcache.hash_strategy = standard
+    memcache.hash_function = crc32
+    {{- end }}  
+{{- end }}    

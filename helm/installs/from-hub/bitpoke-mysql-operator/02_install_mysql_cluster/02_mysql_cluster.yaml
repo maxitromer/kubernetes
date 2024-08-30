@@ -1,0 +1,36 @@
+# https://github.com/bitpoke/mysql-operator/blob/master/examples/example-cluster.yaml
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlCluster
+metadata:
+  name: my-cluster
+spec:
+  replicas: 3
+  secretName: my-cluster-secret
+
+  ## PodDisruptionBudget
+  # minAvailable: "1" # Add errors on a first deployment
+
+  ## Configs that will be added to my.cnf for cluster
+  mysqlConf:
+  #   innodb-buffer-size: 128M
+
+  ## Specify additional pod specification
+  podSpec:
+    backupNodeSelector:
+      kubernetes.io/arch: amd64
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    resources:
+      requests:
+        memory: 1G
+        cpu:    600m
+
+  ## Specify additional volume specification
+  volumeSpec:
+    # https://godoc.org/k8s.io/api/core/v1#PersistentVolumeClaimSpec
+    persistentVolumeClaim:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 99999Gi # Can't be changed after the first deploy
+      storageClassName: "local-path"

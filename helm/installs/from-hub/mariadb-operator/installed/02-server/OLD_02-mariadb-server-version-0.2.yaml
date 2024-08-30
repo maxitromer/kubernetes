@@ -1,0 +1,98 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb-repl
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb
+    key: root-password
+  username: mariadb
+  passwordSecretKeyRef:
+    name: mariadb
+    key: password
+  database: mariadb
+  
+  storage:
+    size: 1Gi
+    storageClassName: local-path
+    resizeInUseVolumes: true
+    waitForVolumeResize: true
+    volumeClaimTemplate:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: local-path
+  replicas: 3
+  
+  replication:
+    enabled: true
+    primary:
+      podIndex: 0
+      automaticFailover: true
+    replica:
+      waitPoint: AfterSync
+      gtid: CurrentPos
+      replPasswordSecretKeyRef:
+        name: mariadb
+        key: password
+      connectionTimeout: 10s
+      connectionRetries: 10
+      syncTimeout: 10s
+    syncBinlog: true
+    probesEnabled: true
+  
+  service:
+    type: ClusterIP
+  
+  connection:
+    secretName: mariadb-repl-conn
+    secretTemplate:
+      key: dsn
+  
+  affinity:
+    antiAffinityEnabled: true
+  
+  tolerations:
+    - key: "k8s.mariadb.com/ha"
+      operator: "Exists"
+      effect: "NoSchedule"
+  
+  podDisruptionBudget:
+    maxUnavailable: 33%
+  
+  updateStrategy:
+    type: ReplicasFirstPrimaryLast
+  
+  myCnf: |
+    [mariadb]
+    bind-address=*
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_autoinc_lock_mode=2
+    innodb_buffer_pool_size=1024M
+    max_allowed_packet=256M
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 1Gi
+  
+  # livenessProbe:
+  #   initialDelaySeconds: 20
+  #   periodSeconds: 5
+  #   timeoutSeconds: 5
+  
+  # readinessProbe:
+  #   initialDelaySeconds: 20
+  #   periodSeconds: 5
+  #   timeoutSeconds: 5
+  
+  metrics:
+    enabled: false
+
+  nodeSelector:
+    kubernetes.io/arch: amd64    

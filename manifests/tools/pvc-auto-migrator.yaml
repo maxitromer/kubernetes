@@ -1,0 +1,78 @@
+## THIS NEEDS TO BE TESTED. 
+
+# INSTRUCTIONS:
+
+# The below YAML creates a Kubernetes job that can copy data from one volume to another.
+
+# IMPORTANT: Both PVCs need to exist in the same namespace. If you were using a different namespace than the default, change the job’s namespace below.
+
+# The kind: PersistentVolumeClaim creates a RWX PVC (Longhorn will dynamically provision a volume for you).
+
+# The kind: Job will copy all the data from one volume to another. 
+
+# 1.- In the kind PVC add the correct values you wish to use in the workload.
+
+# 2.- Apply the kind PVC only.
+
+# 3.- Remove the deployment where the original PVC is running.
+
+# 4.- In the Job replace the 'data-source-pvc' with the name of the source PVC and the 'data-target-pvc' with the name of the new PVC that you wish to use for your workloads.
+
+# 5.- Repoint the mountPath in your workload to the new PVC.
+
+# 6.- Test it.
+
+# 7.- Remove the old PVC.
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whoami-pvc
+  namespace: default  # namespace where the PVC's exist
+spec:
+  accessModes:
+    - ReadWriteMany # Replace with the correct value
+  storageClassName: longhorn # Replace with the correct value
+  resources:
+    requests:
+      storage: 5Gi # Replace with the correct value
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: default  # namespace where the PVC's exist
+  name: volume-migration
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  template:
+    metadata:
+      name: volume-migration
+      labels:
+        name: volume-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: volume-migration
+          image: ubuntu:xenial
+          tty: true
+          command: [ "/bin/sh" ]
+          args: [ "-c", "cp -r -v /mnt/old /mnt/new" ]
+          volumeMounts:
+            - name: old-vol
+              mountPath: /mnt/old
+            - name: new-vol
+              mountPath: /mnt/new
+      volumes:
+        - name: old-vol
+          persistentVolumeClaim:
+            claimName: data-source-pvc # change to data source PVC
+        - name: new-vol
+          persistentVolumeClaim:
+            claimName: data-target-pvc # change to data target PVC
+

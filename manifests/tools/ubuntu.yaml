@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-testing
+  namespace: percona
+spec:
+  selector:
+    matchLabels:
+      app: ubuntu-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ubuntu-app
+    spec:
+      containers:
+        - name: ubuntu-app
+          image: ubuntu:16.04
+          command: ["/bin/sh"]
+          args: ["-c", "while true; do echo hello; sleep 10;done"]
+      #     volumeMounts:
+      #       - mountPath: "/datastorage-origin"
+      #         name: whoami-pv-storage
+      #       - mountPath: "/datastorage-destiny"
+      #         name: whoami-pv              
+      # volumes:
+      #   - name: whoami-pv-storage
+      #     persistentVolumeClaim:
+      #       claimName: whoami-pvc-storage
+      #   - name: whoami-pv
+      #     persistentVolumeClaim:
+      #       claimName: whoami-pvc
+      # nodeSelector:
+      #   kubernetes.io/hostname: r7-11     

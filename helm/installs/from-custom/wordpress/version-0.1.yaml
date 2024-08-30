@@ -1,0 +1,9 @@
+wordpressInstances:
+  - name: whoami
+    domain: whoami.markitectos.com
+    autoscaling:
+      enabled: false
+  - name: t
+    domain: t.markitectos.com
+    autoscaling:
+      enabled: false

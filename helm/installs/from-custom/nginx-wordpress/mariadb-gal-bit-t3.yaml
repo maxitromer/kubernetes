@@ -1,0 +1,84 @@
+## BITPOKE VERSION
+
+global:
+  uniqueName: whoami
+  namespace:
+    name: percona
+  replicas: 1
+  imagePullPolicy : IfNotPresent # Always
+  # Require Resource Requests (in both containers) to work, limits are optional but recommended
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+  preferToDistributePods: true
+  preferToRunOnAMD64: true
+
+ # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
+domains:
+  - name: t0.markitectos.com
+
+nginx:
+  image: alpine:3.20.2
+  enableReadinessAndLivenessProbe: false
+  resources:
+    enableLimits: false
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    enableRequests: true
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  customNginxConf:
+    enabled: true
+    clientMaxBodySizeMB: 100
+    # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
+    enableFastCGICache: true
+    cacheSizeMB: 100
+    removeInactiveItemsMinutes: 60
+    enableBrowserCache: true
+
+wordpress:
+  image: wordpress:6.6.1-php8.3-fpm-alpine
+  # will enable WP_DEBUG in wp-config.php for logs in: /var/www/html/wp-content/debug.log
+  debug: false
+  https: true
+  DisableAutoUpdate: true
+  # this increase too much the time to start the pod
+  removePreintalledPluginsAndThemes: false 
+  enableReadinessAndLivenessProbe: false
+  enableMemcached: false
+  resources:
+    enableLimits: false
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    enableRequests: true
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  customPHPini:
+    enabled: true
+    uploadMaxFilesize: 100M
+    postMaxSize: 100M
+    memoryLimit: 256M
+    maxExecutionTime: 600
+    maxInputVars: 1000
+    maxInputTime: 400 
+  storage:
+    enabled: true
+    accessModes: ReadWriteMany
+    class: longhorn
+    # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
+    size: 2Gi
+  database:
+    # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
+    host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
+    name: whoami_markitectos
+    user: whoami_markitectos_user
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+    SecretPasswordKey: TWF4aTE0NjUh
+    prefix: wp_
+

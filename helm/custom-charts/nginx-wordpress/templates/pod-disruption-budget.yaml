@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.global.uniqueName }}-pdb
+  namespace: {{ .Values.global.namespace.name }}
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: {{ .Values.global.uniqueName }}-nginx-wordpress

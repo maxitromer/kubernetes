@@ -1,0 +1,13 @@
+auth:
+ enabled: false
+ # enabled: true
+ # sentinel: true
+ # password: "wOaxfmztJT"
+
+sentinel:
+  enabled: true
+  masterSet: "mymaster"
+  
+networkPolicy:
+  enabled: true
+  allowExternal: true

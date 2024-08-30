@@ -1,0 +1,14 @@
+{{- range .Values.wordpressInstances }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}-markitectos-wordpress
+spec:
+  selector:
+    app: {{ .name }}-markitectos-wordpress
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+{{- end }}

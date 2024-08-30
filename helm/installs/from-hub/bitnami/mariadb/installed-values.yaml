@@ -1,0 +1,43 @@
+architecture: replication
+auth:
+  rootPassword: root_password
+  replicationUser: repl_user
+  replicationPassword: repl_password
+
+primary:
+  nodeSelector:
+    kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.
+  # podAntiAffinityPreset: hard # Prevents certain pods from being scheduled on the same node
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 2Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - mariadb
+          topologyKey: kubernetes.io/hostname 
+secondary:
+  replicaCount: 2  # Number of total slaves
+  nodeSelector:
+    kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.
+  # podAntiAffinityPreset: hard # Prevents certain pods from being scheduled on the same node
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 2Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - mariadb
+          topologyKey: kubernetes.io/hostname 

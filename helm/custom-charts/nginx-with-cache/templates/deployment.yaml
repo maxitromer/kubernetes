@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.global.namespace.name }}
+  name: {{ .Values.global.uniqueName }}-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.global.uniqueName }}-nginx-app
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.uniqueName }}-nginx-app
+    spec:
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ .Values.global.uniqueName }}-nginx-conf
+      - name: nginx-default-config
+        configMap:
+          name: {{ .Values.global.uniqueName }}-default-conf
+      - name: nginx-cache
+        emptyDir: {}
+      containers:
+      - name: nginx-from-alpine
+        image: {{ .Values.nginx.image }}
+        ports:
+        - containerPort: 80
+        command: ["/bin/sh"]
+        args: ["-c", "apk add --no-cache nginx nginx-mod-http-cache-purge && nginx -g 'daemon off;'"]
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-default-config
+          mountPath: /etc/nginx/http.d/default.conf
+          subPath: default.conf
+        - name: nginx-cache
+          mountPath: /var/cache/nginx

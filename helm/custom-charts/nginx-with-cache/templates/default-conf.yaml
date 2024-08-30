@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.uniqueName }}-default-conf
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  default.conf: |
+    {{- range .Values.servers }}
+    server {
+        listen 80;
+        server_name {{ .domain }} www.{{ .domain }};
+        root /var/www/html;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$args;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass {{ .service }}:{{ .port }};
+            fastcgi_index index.php;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_cache nginx-cache;
+            fastcgi_cache_valid 60m;
+            add_header X-FastCGI-Cache $upstream_cache_status;
+        }
+
+        location ~ /purge(/.*) {
+            fastcgi_cache_purge nginx-cache "$scheme$request_method$host$1";
+        }
+
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+            expires max;
+            log_not_found off;
+        }
+    }
+    {{- end }}

@@ -1,0 +1,17 @@
+global:
+  uniqueName: test
+  namespace:
+    name: percona
+
+nginx:
+  image: alpine:3.18
+
+servers:
+  - uniqueName: t
+    domain: t.markitectos.com
+    service: t-markitectos-wordpress
+    port: 9000
+  - uniqueName: whoami
+    domain: whoami.markitectos.com
+    service: t-markitectos-wordpres
+    port: 9000    

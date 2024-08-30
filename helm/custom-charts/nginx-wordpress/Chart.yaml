@@ -1,0 +1,4 @@
+apiVersion: v2
+name: custom-nginx-with-cache-and-wordpress
+description: A Helm chart for Nginx with Cached fastCGI and Wordpress
+version: 0.1.0

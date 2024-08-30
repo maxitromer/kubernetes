@@ -1,0 +1,23 @@
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlUser
+metadata:
+  name: my-user
+#  annotations:
+#    mysql-operator.presslabs.org/resourceDeletionPolicy: retain # When the MysqlUser is deleted, the MySQL user will be preserved
+spec:
+  user: user-name-in-mysql
+  clusterRef:
+    name: my-cluster
+    namespace: default
+  password:
+    # name: my-user-password
+    # key: PASSWORD
+    name: bitpoke-t0-db-pass
+    key: password    
+  allowedHosts:
+    - "%"
+  permissions:
+    - schema: db-name-in-mysql
+      tables: ["*"]
+      permissions:
+        - ALL PRIVILEGES

@@ -1,0 +1,13 @@
+global:
+  uniqueName: test
+  namespace:
+    name: default
+
+nginx:
+  image: alpine:3.18
+
+servers:
+  - uniqueName: website-1
+    domain: website-1.com
+    service: website-1-service
+    port: 9000

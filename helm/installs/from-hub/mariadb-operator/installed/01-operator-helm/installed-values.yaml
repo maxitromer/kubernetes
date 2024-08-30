@@ -1,0 +1,47 @@
+ha:
+  # -- Enable high availability
+  enabled: false
+  replicas: 2
+
+# -- Resources to add to controller container
+resources: {}
+# requests:
+#   cpu: 10m
+#   memory: 32Mi
+
+# -- Node selectors to add to controller Pod
+nodeSelector:
+  kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.
+
+# -- Tolerations to add to controller Pod
+tolerations: []
+
+# -- Affinity to add to controller Pod
+affinity: {}
+
+webhook:
+  resources: {}
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
+  # -- Node selectors to add to webhook Pod
+  nodeSelector:
+    kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.
+  # -- Tolerations to add to webhook Pod
+  tolerations: []
+  # -- Affinity to add to webhook Pod
+  affinity: {}
+
+certController:
+  # -- Resources to add to cert-controller container
+  resources: {}
+  # requests:
+  #   cpu: 10m
+  #   memory: 32Mi
+  # -- Node selectors to add to cert-controller Pod
+  nodeSelector:
+    kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.    
+  # -- Tolerations to add to cert-controller Pod
+  tolerations: []
+  # -- Affinity to add to cert-controller Pod
+  affinity: {}

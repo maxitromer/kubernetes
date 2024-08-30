@@ -1,0 +1,4 @@
+apiVersion: v2
+name: custom-wordpress-instances
+description: A Helm chart for Customized WordPress instances
+version: 0.1.0
