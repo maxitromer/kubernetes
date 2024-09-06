@@ -3,7 +3,7 @@
 global:
   uniqueName: bitpoke-t0
   namespace:
-    name: default
+    name: databases
   replicas: 1
   imagePullPolicy : IfNotPresent # Always
   # Require Resource Requests (in both containers) to work, limits are optional but recommended
@@ -75,7 +75,7 @@ wordpress:
     size: 1Gi
   database:
     # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
-    host: my-cluster-mysql-replicas.default.svc.cluster.local:3306 # my-cluster-mysql.default.svc.cluster.local:3306
+    host: my-cluster-mysql-master.databases.svc.cluster.local:3306 # my-cluster-mysql.default.svc.cluster.local:3306
     name: db-name-in-mysql
     user: user-name-in-mysql
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64

@@ -1,4 +1,4 @@
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: {{ $.Values.global.uniqueName }}-ingress-route
@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`{{ $domain.name }}`) || Host(`www.{{ $domain.name }}`){{ end }}
+    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`{{ $domain.name }}`){{ end }}
       kind: Rule
       services:
         - name: {{ .Values.global.uniqueName }}-nginx-wordpress
@@ -21,5 +21,9 @@ spec:
           strategy: RoundRobin
       middlewares:
         - name: {{ $.Values.global.uniqueName }}-default-headers
+    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`www.{{ $domain.name }}`){{ end }}
+      kind: Rule
+      middlewares:
+        - name: {{ $.Values.global.uniqueName }}-www-redirect
   tls:
     secretName: {{ $.Values.global.uniqueName }}-ssl-secret

@@ -6,7 +6,11 @@ metadata:
 spec:
   secretName: {{ $.Values.global.uniqueName }}-ssl-secret
   issuerRef:
+    {{- if .Values.global.productionSSLcertificate }}
     name: letsencrypt-production
+    {{- else }}
+    name: letsencrypt-staging
+    {{- end }}
     kind: ClusterIssuer
   dnsNames:
     {{- range $.Values.domains }}

@@ -1,0 +1,12 @@
+# --set controller.enabled=true \
+# --set vip.interface=eth0 \ ### 
+# --set vip.address=10.0.0.100 \ ###
+# --set vip.leaseDuration=30 \
+# --set vip.renewDeadline=15 \
+# --set vip.retryPeriod=5
+
+config:
+  address: "10.14.56.5"
+
+env:
+  vip_interface: "eth0"  

@@ -187,8 +187,14 @@ spec:
           - name: WORDPRESS_DB_PASSWORD
             valueFrom:
               secretKeyRef:
+                {{- if $.Values.bitpokeDB.enabled }}
+                name: {{ .Values.global.uniqueName }}-bitpoke-db-pass
+                key: password
+                {{- end }}
+                {{- if not $.Values.bitpokeDB.enabled }}
                 name: {{ .Values.global.uniqueName }}-db-pass
                 key: password
+                {{- end }}
         resources:
           {{- if .Values.wordpress.resources.enableLimits }}
           limits:

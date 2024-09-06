@@ -4,6 +4,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Values.global.uniqueName }}-wp-content-pvc
   namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    {{- if $.Values.wordpress.storage.keepOnUninstall }}
+    helm.sh/resource-policy: keep
+    {{- end }}
 spec:
   accessModes:
     - {{ .Values.wordpress.storage.accessModes | quote }}

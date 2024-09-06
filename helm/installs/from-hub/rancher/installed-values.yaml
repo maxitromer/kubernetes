@@ -2,6 +2,9 @@
 # Run the next command to patch the ranched deployment after every upgrade:
 # kubectl patch deployment rancher -p '{"spec":{"template":{"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/arch","operator":"In","values":["arm64","amd64"]}]}]}}}}}}}' -n cattle-system
 
+antiAffinity: required
+topologyKey: kubernetes.io/hostname
+
 # Fully qualified name to reach your Rancher server
 hostname: r.markitectos.com
 
@@ -13,7 +16,13 @@ bootstrapPassword: "maxi1465"
 replicas: 2
 
 # Set pod resource requests/limits for Rancher.
-resources: {}
+resources:
+  requests:
+    cpu: 10m
+    memory: 8Mi
+  limits:
+    cpu: 4
+    memory: 2048Mi
 
 ingress:
   tls:

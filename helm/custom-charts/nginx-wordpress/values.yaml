@@ -1,17 +1,36 @@
+# -- NOT TODO (FOR NOW) --
+
+# Add the option to keep the lets encrypt certificates when uninstall
+# Add metrics for prometheus
+
 # -- TODO --
-# Add a nodeSelector to every pod in the deployment including los initContasiners
+
+# Add a nodeSelector to every pod in the deployment including los initContainers
 # Add the posibility to include the nginx server to the wordpress container (install nginx in the wordpress container) to use less resourses
 # Add the posibility to select the type of container to use with nginx (the alpine with nginx intalled or the actual nginx container from docker but without the cache plugin)
 # Add the posibility to change the URLs that not are cached on de default conf of nginx. The idea here is to exclude all the carts and checkouts.
-# Add the user and database creation to the chart.
 # Add the cloudflare DNS creation to the chart.
-# When the chats is uninstalled is important to keep the PV and the PVC with all the data.
+# Add the psibility to split databases (read and write)
+# Solve the www-redirect to domain
+
+# -- DONE --
+
+# Add the user and database creation to the chart.
+# Add the option for production or staging certificates for lets encrypt
+# Include the bitpoke database and user creation
+# make posible to use users and password secrets from other namespaces
+# make posible to create namespaces for the wordpress instalations
+# Solve the SSL certificate creation / validation problem
 # When chart is uninstalled is important to keep the database, the user, and the grants.
+# When the chats is uninstalled is important to keep the PV and the PVC with all the data.
 
 global:
-  uniqueName: whoami
+  uniqueName: who
+  productionSSLcertificate: false # Else letsencrypt-staging
   namespace:
-    name: percona
+    create: true
+    name: default2
+    keepOnUninstall: true
   replicas: 1
   imagePullPolicy : IfNotPresent # Always
   # Require Resource Requests (in both containers) to work, limits are optional but recommended
@@ -25,8 +44,8 @@ global:
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
 domains:
-  - name: whoami.markitectos.com
-  - name: t.markitectos.com
+  - name: t3.markitectos.com
+  - name: www.t3.markitectos.com  
 
 nginx:
   image: alpine:3.20.2
@@ -82,6 +101,7 @@ wordpress:
     class: longhorn
     # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
     size: 2Gi
+    keepOnUninstall: true
   database:
     # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
     host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
@@ -89,5 +109,13 @@ wordpress:
     user: whoami_markitectos_user
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
     SecretPasswordKey: TWF4aTE0NjUh
-    prefix: wp_
+
+# This will disable the external database parameters
+bitpokeDB:
+  enabled: true
+  namespace: databases
+  clusterName: my-cluster
+  ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+  secretPasswordKey: TWF4aTE0NjUh
+  keepOnUninstall: false
 

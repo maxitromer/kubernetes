@@ -1,0 +1,61 @@
+nodeSelector:
+  kubernetes.io/arch: amd64
+
+# Is preferred to have the mysql operator running if electricity goes off, thats why this affinity exist
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - r7-11
+    - weight: 50
+      preference:
+        matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - r9-12            
+
+# The operator will install a ServiceMonitor if you have prometheus-operator installed.
+mysqlClustersGlobalServiceMonitor:
+  enabled: true
+  ## Additional labels for the serviceMonitor. Useful if you have multiple prometheus operators running to select only specific ServiceMonitors
+  # additionalLabels:
+  #   prometheus: prom-internal
+  interval: 10s
+  scrapeTimeout: 3s
+  # jobLabel:
+  # targetLabels:
+  # podTargetLabels:
+  # metricRelabelings:
+  servicePortName: prometheus
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: mysql.presslabs.org
+      app.kubernetes.io/name: mysql
+
+orchestrator:
+  persistence:
+    enabled: true
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    storageClass: "hdd-local-path"
+    # annotations: {}
+    # selector:
+    #  matchLabels: {}
+    accessMode: "ReadWriteOnce"
+    size: 1Gi
+    # inject an init container which properly sets the ownership for the orchestrator's data volume
+    # this is needed when the PV provisioner does not properly sets permissions for fsGroup
+    # when enabling this, you MUST change the securityContext.runAsNonRoot to false
+    fsGroupWorkaroundEnabled: false      

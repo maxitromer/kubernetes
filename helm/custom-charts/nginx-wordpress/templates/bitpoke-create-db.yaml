@@ -1,0 +1,16 @@
+{{- if $.Values.bitpokeDB.enabled }}
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlDatabase
+metadata:
+  name: {{ .Values.global.uniqueName }}-database
+  namespace: {{ .Values.bitpokeDB.namespace }}  
+  annotations:
+    {{- if $.Values.bitpokeDB.keepOnUninstall }}
+    helm.sh/resource-policy: keep
+    {{- end }}
+spec:
+  database: {{ .Values.global.uniqueName }}-db-name
+  clusterRef:
+    name: {{ .Values.bitpokeDB.clusterName }}
+    namespace: {{ .Values.bitpokeDB.namespace }}
+{{- end }}     

@@ -3,27 +3,149 @@ apiVersion: mysql.presslabs.org/v1alpha1
 kind: MysqlCluster
 metadata:
   name: my-cluster
+  namespace: databases
 spec:
   replicas: 3
   secretName: my-cluster-secret
+
+  ## For setting custom docker image or specifying mysql version
+  ## the image field has priority over mysqlVersion.
+  ## List of suported versions here: https://github.com/bitpoke/mysql-operator/blob/master/pkg/util/constants/constants.go
+  # image: percona:8.0
+  mysqlVersion: "8.0"
+
+  # backupSchedule: "0 0 0 * * *" # daily / "0 0 0 * * 0" # weekly
+  # backupURL: gs://bucket_name/path/
+  # backupSecretName: backup-secret
+  # backupScheduleJobsHistoryLimit: 5 # Keeps last BackupScheduleJobsHistoryLimit Backups
+  # backupRemoteDeletePolicy: delete
+  # backupCredentials:
+  #   # use s3 https://rclone.org/s3/
+  #   S3_PROVIDER: ?             # like: AWS, Minio, Ceph, and so on
+  #   S3_ENDPOINT: ?
+  #   AWS_ACCESS_KEY_ID: ?
+  #   AWS_SECRET_ACCESS_KEY: ?
+  #   AWS_REGION: ?
+  #   AWS_ACL: ?
+  #   AWS_STORAGE_CLASS: ?
+  #   AWS_SESSION_TOKEN: ?
+
+  #   # use google cloud storage https://rclone.org/googlecloudstorage/
+  #   GCS_SERVICE_ACCOUNT_JSON_KEY: ?
+  #   GCS_PROJECT_ID: ?
+  #   GCS_OBJECT_ACL: ?
+  #   GCS_BUCKET_ACL: ?
+  #   GCS_LOCATION: ?
+  #   GCS_STORAGE_CLASS: MULTI_REGIONAL
+
+  #   # use http https://rclone.org/http/
+  #   HTTP_URL: ?
+
+  #   # use google drive https://rclone.org/drive/
+  #   GDRIVE_CLIENT_ID: ?
+  #   GDRIVE_ROOT_FOLDER_ID: ?
+  #   GDRIVE_IMPERSONATOR: ?
+
+  #   # use azure https://rclone.org/azureblob/
+  #   AZUREBLOB_ACCOUNT: ?
+  #   AZUREBLOB_KEY: ?
 
   ## PodDisruptionBudget
   # minAvailable: "1" # Add errors on a first deployment
 
   ## Configs that will be added to my.cnf for cluster
   mysqlConf:
-  #   innodb-buffer-size: 128M
+    innodb_buffer_pool_size: 20G
+    innodb_log_file_size: 1G
+    innodb_flush_log_at_trx_commit: 1
+    innodb_flush_method: O_DIRECT
+    innodb_io_capacity: 2000
+    innodb_io_capacity_max: 4000
+    innodb_read_io_threads: 8
+    innodb_write_io_threads: 8
+    innodb_file_per_table: 1
+    max_connections: 1000
+    thread_cache_size: 128
+    tmp_table_size: 256M
+    max_heap_table_size: 256M
+    join_buffer_size: 4M
+    sort_buffer_size: 4M
+    read_rnd_buffer_size: 2M
+    table_open_cache: 10000
+    table_definition_cache: 10000
+    sync_binlog: 1
+    innodb_doublewrite: 1
+    innodb_max_dirty_pages_pct: 50
+    innodb_buffer_pool_dump_at_shutdown: 1
+    innodb_buffer_pool_load_at_startup: 1
 
   ## Specify additional pod specification
   podSpec:
-    backupNodeSelector:
-      kubernetes.io/arch: amd64
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100  # Higher importance to spreading pods across nodes
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - my-cluster
+            topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 80
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - r7-11
+        - weight: 50
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - r9-12              
     nodeSelector:
       kubernetes.io/arch: amd64
+    backupAffinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100  # Higher importance to spreading pods across nodes
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - my-cluster
+            topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 80
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - r7-11
+        - weight: 50
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - r9-12 
+    backupNodeSelector:
+      kubernetes.io/arch: amd64
+
     resources:
       requests:
-        memory: 1G
-        cpu:    600m
+        memory: 12G # 24G # 1G
+        cpu:    4 # 6 # 600m
 
   ## Specify additional volume specification
   volumeSpec:
@@ -33,4 +155,4 @@ spec:
       resources:
         requests:
           storage: 99999Gi # Can't be changed after the first deploy
-      storageClassName: "local-path"
+      storageClassName: "raid-ssd-cached-local-path"

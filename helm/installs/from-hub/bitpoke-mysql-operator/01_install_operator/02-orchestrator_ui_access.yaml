@@ -1,0 +1,13 @@
+apiVersion: ui.cattle.io/v1
+kind: NavLink
+metadata:
+  name: mysql-orchestrator
+  namespace: databases
+spec:
+  label: MySQL Orchestrator
+  target: _blank
+  toService:
+    name: bitpoke-mysql-operator-0-orc-svc
+    namespace: databases
+    port: '80'
+    scheme: http

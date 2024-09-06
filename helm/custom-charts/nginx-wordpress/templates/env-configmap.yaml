@@ -4,10 +4,17 @@ metadata:
   name: {{ .Values.global.uniqueName }}-wordpress-configmap
   namespace: {{ .Values.global.namespace.name }}
 data:
+  {{- if $.Values.bitpokeDB.enabled }}
+  WORDPRESS_DB_HOST: {{ .Values.bitpokeDB.clusterName }}-mysql-master.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306
+  WORDPRESS_DB_NAME: {{ .Values.global.uniqueName }}-db-name
+  WORDPRESS_DB_USER: {{ .Values.global.uniqueName }}-username
+  {{- end }}
+  {{- if not $.Values.bitpokeDB.enabled }}
   WORDPRESS_DB_HOST: {{ .Values.wordpress.database.host }}
   WORDPRESS_DB_NAME: {{ .Values.wordpress.database.name }}
   WORDPRESS_DB_USER: {{ .Values.wordpress.database.user }}
-  WORDPRESS_TABLE_PREFIX: {{ .Values.wordpress.database.prefix }}
+  {{- end }}
+  WORDPRESS_TABLE_PREFIX: {{ .Values.global.uniqueName }}
   {{- if $.Values.wordpress.customPHPini.enabled }}
   PHP_INI_SCAN_DIR: :/usr/local/etc/php/conf.d/custom-conf
   {{- end }}
