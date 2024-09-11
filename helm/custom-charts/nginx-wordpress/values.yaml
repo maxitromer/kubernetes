@@ -12,6 +12,7 @@
 # Add the cloudflare DNS creation to the chart.
 # Add the psibility to split databases (read and write)
 # Solve the www-redirect to domain
+# add the posibility to keep the SSL certificate
 
 # -- DONE --
 
@@ -30,7 +31,7 @@ global:
   namespace:
     create: true
     name: default2
-    keepOnUninstall: true
+    keepOnUninstall: false
   replicas: 1
   imagePullPolicy : IfNotPresent # Always
   # Require Resource Requests (in both containers) to work, limits are optional but recommended
@@ -101,7 +102,7 @@ wordpress:
     class: longhorn
     # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
     size: 2Gi
-    keepOnUninstall: true
+    keepOnUninstall: false
   database:
     # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
     host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
