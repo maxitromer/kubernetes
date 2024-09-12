@@ -1,6 +1,6 @@
 services:
   wordpress:
-    image: markitectos/testing:custom_wp6.6.1-php8.3-fpm-alpine
+    image: test_custom_wp6.6.2-php8.3-fpm-alpine
     ports:
       - "8080:80"
     environment:
@@ -10,6 +10,9 @@ services:
       WORDPRESS_DB_PASSWORD: password
     depends_on:
       - db
+    volumes:
+      - ./db-config.php:/var/www/html/db-config.php
+    #   - ./custom-wp-config.php:/var/www/html/wp-config.php
 
   db:
     image: percona/percona-server:8.0.37-29
@@ -18,9 +21,11 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
       MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    privileged: true
     command: >
-      --default-authentication-plugin=mysql_native_password
       --tls-version=TLSv1.2,TLSv1.3
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_520_ci
     deploy:
       resources:
         limits:
