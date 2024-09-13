@@ -36,8 +36,6 @@ RUN wget https://github.com/stuttter/ludicrousdb/archive/refs/tags/${LUDICROUSDB
     && wget https://downloads.wordpress.org/plugin/w3-total-cache.${W3TC_VERSION}.zip -O /tmp/w3-total-cache.zip \
     && unzip /tmp/w3-total-cache.zip -d ${WP_CONTENT_DIR}/plugins/ \
     && rm /tmp/w3-total-cache.zip \
-    && rm -rf ${WP_CONTENT_DIR}/plugins/hello.php \
-    && rm -rf ${WP_CONTENT_DIR}/plugins/akismet \
     && rm -rf /tmp/*
 
 # Install and enable memcached extension
