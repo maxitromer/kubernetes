@@ -1,6 +1,6 @@
 services:
   wordpress:
-    image: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v3
+    image: markitectos/testing:custom_wp6.6.2-php8.3-fpm-alpine-v4
     ports:
       - "8080:80"
     environment:

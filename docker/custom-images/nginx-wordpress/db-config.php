@@ -65,7 +65,7 @@ $wpdb->allow_bail = false;
  *
  * Default: 10
  */
-$wpdb->max_connections = 10;
+$wpdb->max_connections = 100;
 
 /**
  * Enables checking TCP responsiveness by fsockopen prior to mysql_connect or
@@ -116,12 +116,13 @@ $wpdb->cache_group = 'ludicrousdb';
 // 	)
 // );
 
+
 // Added to try the plugin using a dockerized database
 $wpdb->add_database(array(
-    'host'     => 'db', // If port is other than 3306, use host:port.
-    'user'     => 'user',
-    'password' => 'password',
-    'name'     => 'wordpress',
+    'host'     => getenv('WORDPRESS_DB_HOST'), // If port is other than 3306, use host:port.
+    'user'     => getenv('WORDPRESS_DB_USER'),
+    'password' => getenv('WORDPRESS_DB_PASSWORD'),
+    'name'     => getenv('WORDPRESS_DB_NAME'),
     'write'    => 1,
     'read'     => 1,
     'dataset'  => 'global',

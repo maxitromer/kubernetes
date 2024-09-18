@@ -53,6 +53,10 @@ RUN cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db.php ${WP_CO
     && cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db-error.php ${WP_CONTENT_DIR}/db-error.php
     # && cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db-config.php ${WP_DIR}/db-config.php
 
+# Remove the WP pre-installed plugins    
+RUN rm -rf /var/www/html/wp-content/plugins/akismet \
+    && rm /var/www/html/wp-content/plugins/hello.php
+
 # Copy custom db-config.php (if you have a custom one)
 COPY db-config.php ${WP_DIR}/db-config.php
 
