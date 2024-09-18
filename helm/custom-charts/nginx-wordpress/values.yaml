@@ -27,21 +27,37 @@
 
 global:
   uniqueName: who
-  productionSSLcertificate: false # Else letsencrypt-staging
   namespace:
-    create: true
-    name: default2
-    keepOnUninstall: false
+    create: false
+    name: default
+    keepOnUninstall: true
   replicas: 1
   imagePullPolicy : IfNotPresent # Always
   # Require Resource Requests (in both containers) to work, limits are optional but recommended
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
+  deploymentCustomImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v3
+
+SSLcertificate:
+  productionReady: true  # Else letsencrypt-staging
+  keepOnUninstall: true
+
+resources:
+  enableLimits: true
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+  enableRequests: true
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
 domains:
@@ -72,7 +88,7 @@ nginx:
 wordpress:
   image: wordpress:6.6.1-php8.3-fpm-alpine
   # will enable WP_DEBUG in wp-config.php for logs in: /var/www/html/wp-content/debug.log
-  debug: false
+  debug: true
   https: true
   DisableAutoUpdate: true
   # this increase too much the time to start the pod

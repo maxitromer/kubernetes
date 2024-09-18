@@ -25,215 +25,95 @@ spec:
         {{- if $.Values.global.preferToRunOnAMD64 }}
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 90
-            preference:
-              matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - amd64
+            - weight: 90
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
         {{- end }}
         {{- if $.Values.global.preferToDistributePods }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 50
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - {{ .Values.global.uniqueName }}-nginx-wordpress
-              topologyKey: "kubernetes.io/hostname"
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ .Values.global.uniqueName }}-nginx-wordpress
+                topologyKey: "kubernetes.io/hostname"
         {{- end }}
       volumes:
         {{- if $.Values.wordpress.customPHPini.enabled }}
-      - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
-        configMap:
-          name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+        - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+          configMap:
+            name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
         {{- end }}
-        {{- if .Values.wordpress.storage.enabled }}
-      - name: {{ .Values.global.uniqueName }}-wp-content-pv
-        persistentVolumeClaim:
-          claimName: {{ .Values.global.uniqueName }}-wp-content-pvc  
-        {{- end }}    
-        {{- if $.Values.nginx.customNginxConf.enabled }}
-      - name: nginx-config
-        configMap:
-          name: {{ .Values.global.uniqueName }}-nginx-conf
-      - name: nginx-default-config
-        configMap:
-          name: {{ .Values.global.uniqueName }}-default-conf
-      - name: nginx-cache
-        emptyDir: {}
-        {{- end }}
-      - name: shared-files
-        emptyDir: {}
-      {{- if .Values.wordpress.enableMemcached }}
-      - name: php-extensions
-        emptyDir: {}
-      {{- end }}
-      {{- if .Values.wordpress.enableMemcached }}
-      - name: startup-script
-        configMap:
-          name: {{ .Values.global.uniqueName }}-wp-startup-script
-      {{- end }}
-      {{- if .Values.wordpress.enableMemcached }}
-      initContainers:
-      - name: init-php-extensions
-        image: {{ .Values.wordpress.image }}  # Use the same image as the WordPress container
-        command: ["/bin/sh"]
-        args:
-          - "-c"
-          - |
-            apk add --no-cache autoconf libevent libevent-dev  libmemcached-dev zlib-dev gcc make musl-dev &&
-            printf "\n" | pecl install -f memcached &&
-            chmod 755 /usr/local/lib/php/extensions/no-debug-non-zts-20230831/*.so &&
-            cp /usr/local/lib/php/extensions/no-debug-non-zts-20230831/memcached.so /extensions/
-        volumeMounts:
-        - name: php-extensions
-          mountPath: /extensions      
-      {{- end }}
-      containers:
-      - name: nginx-from-alpine
-        image: {{ .Values.nginx.image }}
-        imagePullPolicy : {{ .Values.global.imagePullPolicy }}
-        ports:
-        - containerPort: 80
-        command: ["/bin/sh"]
-        args: ["-c", "apk add --no-cache nginx nginx-mod-http-cache-purge && nginx -g 'daemon off;'"]
-        volumeMounts:
-          {{- if $.Values.nginx.customNginxConf.enabled }}
-        - name: nginx-config
-          mountPath: /etc/nginx/nginx.conf
-          subPath: nginx.conf
-        - name: nginx-default-config
-          mountPath: /etc/nginx/http.d/default.conf
-          subPath: default.conf
-        - name: nginx-cache
-          mountPath: /var/www/html/wp-content/nginx-cache
-          {{- end }}
-        - name: shared-files
-          mountPath: /var/www/html
         {{- if .Values.wordpress.storage.enabled }}
         - name: {{ .Values.global.uniqueName }}-wp-content-pv
-          mountPath: /var/www/html/wp-content
+          persistentVolumeClaim:
+            claimName: {{ .Values.global.uniqueName }}-wp-content-pvc
         {{- end }}
-        resources:
-          {{- if .Values.nginx.resources.enableLimits }}
-          limits:
-            cpu: {{ .Values.nginx.resources.limits.cpu }}
-            memory: {{ .Values.nginx.resources.limits.memory }}
-          {{- end }}
-          {{- if .Values.nginx.resources.enableRequests }}
-          requests:
-            cpu: {{ .Values.nginx.resources.requests.cpu }}
-            memory: {{ .Values.nginx.resources.requests.memory }}
-          {{- end }}          
-        {{- if $.Values.nginx.enableReadinessAndLivenessProbe }}    
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 15
-          timeoutSeconds: 5
-          failureThreshold: 6          
+        {{- if $.Values.bitpokeDB.enabled }}
+        - name: db-cluster-config
+          configMap:
+            name: {{ .Values.global.uniqueName }}-db-cluster-config
         {{- end }}
-      - name: wordpress
-        image: {{ .Values.wordpress.image }}
-        imagePullPolicy : {{ .Values.global.imagePullPolicy }}
-        {{- if .Values.wordpress.enableMemcached }}
-        command: ["/bin/sh"]
-        args: ["-c", "cp /tmp/startup.sh /var/www/html/ && cd /var/www/html/ && chmod +x startup.sh && ./startup.sh && rm startup.sh"]
-        {{- end }}
-        ports:
-        - containerPort: 9000
-        volumeMounts:
-          {{- if .Values.wordpress.enableMemcached }}
-          - name: startup-script
-            mountPath: /tmp/startup.sh
-            subPath: startup.sh
-          {{- end }}
-          {{- if .Values.wordpress.enableMemcached }}
-          - name: php-extensions
-            mountPath: /usr/local/lib/php/extensions/no-debug-non-zts-20230831/memcached.so
-            subPath: memcached.so
-            readOnly: true
-          {{- end }}
-          {{- if $.Values.wordpress.customPHPini.enabled }}
-          - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
-            mountPath: /usr/local/etc/php/conf.d/custom-conf
-            readOnly: true
-          {{- end }} 
-          {{- if .Values.wordpress.storage.enabled }}
-          - name: {{ .Values.global.uniqueName }}-wp-content-pv
-            mountPath: /var/www/html/wp-content
-          {{- end }}
-          - name: shared-files
-            mountPath: /var/www/html
-        envFrom:
-          - configMapRef:
-              name: {{ .Values.global.uniqueName }}-wordpress-configmap
-        env:
-          - name: WORDPRESS_DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                {{- if $.Values.bitpokeDB.enabled }}
-                name: {{ .Values.global.uniqueName }}-bitpoke-db-pass
-                key: password
-                {{- end }}
-                {{- if not $.Values.bitpokeDB.enabled }}
-                name: {{ .Values.global.uniqueName }}-db-pass
-                key: password
-                {{- end }}
-        resources:
-          {{- if .Values.wordpress.resources.enableLimits }}
-          limits:
-            cpu: {{ .Values.wordpress.resources.limits.cpu }}
-            memory: {{ .Values.wordpress.resources.limits.memory }}
-          {{- end }}
-          {{- if .Values.wordpress.resources.enableRequests }}
-          requests:
-            cpu: {{ .Values.wordpress.resources.requests.cpu }}
-            memory: {{ .Values.wordpress.resources.requests.memory }}
-          {{- end }}
-        {{- if $.Values.wordpress.enableReadinessAndLivenessProbe }}
-        readinessProbe:
-          tcpSocket:
-            port: 9000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
-        livenessProbe:
-          tcpSocket:
-            port: 9000
-          initialDelaySeconds: 120
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
-        {{- end }}
-        {{- if $.Values.wordpress.removePreintalledPluginsAndThemes }}
-        lifecycle:
-          postStart:
-            exec:
-              command: 
-                - "/bin/sh"
-                - "-c"
-                - >
-                  sleep 120 &&
-                  rm -rf /var/www/html/wp-content/themes/twentytwentytwo &&
-                  rm -rf /var/www/html/wp-content/themes/twentytwentythree &&
-                  rm -rf /var/www/html/wp-content/plugins/akismet &&
-                  rm -f /var/www/html/wp-content/plugins/hello.php &&
-                  echo "Post-start script execution completed"
-        {{- end }}
+      {{- if $.Values.bitpokeDB.enabled }}
+      initContainers:
+        - name: init-db-cluster-config
+          image: busybox
+          command: ['sh', '-c', 'cp /tmp/db-cluster-config/db-cluster-config.php /var/www/html/wp-content/db-cluster-config.php && chown 82:82 /var/www/html/wp-content/db-cluster-config.php']
+          volumeMounts:
+            - name: db-cluster-config
+              mountPath: /tmp/db-cluster-config
+            - name: {{ .Values.global.uniqueName }}-wp-content-pv
+              mountPath: /var/www/html/wp-content
+      {{- end }}
+      containers:
+        - name: nginx-wordpress
+          image: {{ .Values.global.deploymentCustomImage }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+            - containerPort: 9000
+          volumeMounts:
+            {{- if $.Values.wordpress.customPHPini.enabled }}
+            - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+              mountPath: /usr/local/etc/php/conf.d/custom-conf
+              readOnly: true
+            {{- end }}
+            {{- if .Values.wordpress.storage.enabled }}
+            - name: {{ .Values.global.uniqueName }}-wp-content-pv
+              mountPath: /var/www/html/wp-content
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.global.uniqueName }}-wordpress-configmap
+          env:
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if $.Values.bitpokeDB.enabled }}
+                  name: {{ .Values.global.uniqueName }}-bitpoke-db-pass
+                  key: password
+                  {{- end }}
+                  {{- if not $.Values.bitpokeDB.enabled }}
+                  name: {{ .Values.global.uniqueName }}-db-pass
+                  key: password
+                  {{- end }}
+          resources:
+            {{- if .Values.resources.enableLimits }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+            {{- end }}
+            {{- if .Values.resources.enableRequests }}
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            {{- end }}
+  

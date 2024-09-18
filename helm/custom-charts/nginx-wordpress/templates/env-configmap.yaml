@@ -5,14 +5,14 @@ metadata:
   namespace: {{ .Values.global.namespace.name }}
 data:
   {{- if $.Values.bitpokeDB.enabled }}
-  WORDPRESS_DB_HOST: {{ .Values.bitpokeDB.clusterName }}-mysql-master.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306
-  WORDPRESS_DB_NAME: {{ .Values.global.uniqueName }}-db-name
-  WORDPRESS_DB_USER: {{ .Values.global.uniqueName }}-username
+  WORDPRESS_DB_HOST: "{{ .Values.bitpokeDB.clusterName }}-mysql-master.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306"
+  WORDPRESS_DB_NAME: "{{ .Values.global.uniqueName }}-db-name"
+  WORDPRESS_DB_USER: "{{ .Values.global.uniqueName }}-username"
   {{- end }}
   {{- if not $.Values.bitpokeDB.enabled }}
-  WORDPRESS_DB_HOST: {{ .Values.wordpress.database.host }}
-  WORDPRESS_DB_NAME: {{ .Values.wordpress.database.name }}
-  WORDPRESS_DB_USER: {{ .Values.wordpress.database.user }}
+  WORDPRESS_DB_HOST: "{{ .Values.wordpress.database.host }}"
+  WORDPRESS_DB_NAME: "{{ .Values.wordpress.database.name }}"
+  WORDPRESS_DB_USER: "{{ .Values.wordpress.database.user }}"
   {{- end }}
   WORDPRESS_TABLE_PREFIX: {{ .Values.global.uniqueName }}
   {{- if $.Values.wordpress.customPHPini.enabled }}
@@ -33,7 +33,7 @@ data:
       define('WP_CACHE_KEY_SALT', '{{ .Values.global.uniqueName }}');
       define('WP_CACHE', true);
       {{- end }}
-
+ 
       define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/www/html/wp-content/nginx-cache');
     
       // define('NGINX_HELPER_LOG', true); // Enables the login feature for the Nginx Helper Plugin on "/var/www/html/wp-content/uploads/nginx-helper/nginx.log"

@@ -3,10 +3,14 @@ kind: Certificate
 metadata:
   name: {{ $.Values.global.uniqueName }}-certificate
   namespace: {{ $.Values.global.namespace.name }}
+  annotations:
+    {{- if $.Values.SSLcertificate.keepOnUninstall }}
+    helm.sh/resource-policy: keep
+    {{- end }}
 spec:
   secretName: {{ $.Values.global.uniqueName }}-ssl-secret
   issuerRef:
-    {{- if .Values.global.productionSSLcertificate }}
+    {{- if .Values.SSLcertificate.productionReady }}
     name: letsencrypt-production
     {{- else }}
     name: letsencrypt-staging

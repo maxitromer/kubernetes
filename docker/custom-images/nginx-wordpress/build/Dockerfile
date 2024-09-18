@@ -1,7 +1,7 @@
 ARG WORDPRESS_VERSION=6.6.2
 ARG PHP_VERSION=8.3
 ARG LUDICROUSDB_VERSION=5.2.0
-ARG W3TC_VERSION=2.7.5
+# ARG W3TC_VERSION=2.7.5
 ARG WP_DIR=/var/www/html
 ARG WP_CONTENT_DIR=/var/www/html/wp-content
 
@@ -12,7 +12,7 @@ FROM wordpress:${WORDPRESS_VERSION}-php${PHP_VERSION}-fpm-alpine
 ARG WORDPRESS_VERSION
 ARG PHP_VERSION
 ARG LUDICROUSDB_VERSION
-ARG W3TC_VERSION
+# ARG W3TC_VERSION
 ARG WP_DIR
 ARG WP_CONTENT_DIR
 
@@ -33,9 +33,9 @@ RUN wget https://github.com/stuttter/ludicrousdb/archive/refs/tags/${LUDICROUSDB
     && unzip /tmp/ludicrousdb.zip -d ${WP_CONTENT_DIR}/plugins/ \
     && mv ${WP_CONTENT_DIR}/plugins/ludicrousdb-${LUDICROUSDB_VERSION} ${WP_CONTENT_DIR}/plugins/ludicrousdb \
     && rm /tmp/ludicrousdb.zip \
-    && wget https://downloads.wordpress.org/plugin/w3-total-cache.${W3TC_VERSION}.zip -O /tmp/w3-total-cache.zip \
-    && unzip /tmp/w3-total-cache.zip -d ${WP_CONTENT_DIR}/plugins/ \
-    && rm /tmp/w3-total-cache.zip \
+    # && wget https://downloads.wordpress.org/plugin/w3-total-cache.${W3TC_VERSION}.zip -O /tmp/w3-total-cache.zip \
+    # && unzip /tmp/w3-total-cache.zip -d ${WP_CONTENT_DIR}/plugins/ \
+    # && rm /tmp/w3-total-cache.zip \
     && rm -rf /tmp/*
 
 # Install and enable memcached extension
@@ -49,7 +49,7 @@ RUN apk del autoconf g++ make wget unzip
 COPY build/default.conf /etc/nginx/http.d/default.conf
 
 # Configure LudicrousDB drop-ins
-RUN cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db.php ${WP_CONTENT_DIR}/ludicrousdb-db.php \
+RUN cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db.php ${WP_CONTENT_DIR}/db.php \
     && cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db-error.php ${WP_CONTENT_DIR}/db-error.php
     # && cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db-config.php ${WP_DIR}/db-config.php
 

@@ -1,0 +1,280 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy
+    spec:
+      containers:
+      - name: nginx-proxy
+        image: jwilder/nginx-proxy
+        env:
+        - name: HTTP_PORT
+          value: "8080"
+        - name: HTTPS_PORT
+          value: "8443"
+        ports:
+        - containerPort: 8080
+        - containerPort: 8443
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        - name: certs
+          mountPath: /etc/nginx/certs
+        - name: custom-nginx-conf
+          mountPath: /etc/nginx/conf.d/custom_nginx.conf
+          subPath: custom_nginx.conf
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: certs
+        emptyDir: {}
+      - name: custom-nginx-conf
+        configMap:
+          name: custom-nginx-conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy
+  annotations:
+    lb.k3s.cattle.io/nodepoolmark: "true"
+    lb.k3s.cattle.io/targetNodePortLabel: "svccontroller.k3s.cattle.io/enablelb"
+    lb.k3s.cattle.io/hostname: "nginx-proxy.markitectos.com"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    nodePort: 30080
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8443
+    nodePort: 30443
+    protocol: TCP
+  selector:
+    app: nginx-proxy
+  externalTrafficPolicy: Cluster
+  ipFamilyPolicy: PreferDualStack
+  allocateLoadBalancerNodePorts: true
+  internalTrafficPolicy: Cluster
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: letsencrypt-companion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: letsencrypt-companion
+  template:
+    metadata:
+      labels:
+        app: letsencrypt-companion
+    spec:
+      containers:
+      - name: letsencrypt-companion
+        image: jrcs/letsencrypt-nginx-proxy-companion
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        - name: certs
+          mountPath: /etc/nginx/certs
+        env:
+        - name: NGINX_PROXY_CONTAINER
+          value: "nginx-proxy"
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: certs
+        emptyDir: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-t6
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress-t6
+  template:
+    metadata:
+      labels:
+        app: wordpress-t6
+    spec:
+      containers:
+      - name: wordpress-t6
+        image: wordpress:6.6.2-php8.2-fpm-alpine
+        ports:
+        - containerPort: 9000
+        env:
+        # - name: WORDPRESS_DB_HOST
+        #   value: mysql-service
+        # - name: WORDPRESS_DB_USER
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: mysql-secrets
+        #       key: username
+        # - name: WORDPRESS_DB_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: mysql-secrets
+        #       key: password
+        # - name: WORDPRESS_DB_NAME
+        #   value: wordpress_t6
+        - name: VIRTUAL_HOST
+          value: t6.markitectos.com,www.t6.markitectos.com
+        - name: LETSENCRYPT_HOST
+          value: t6.markitectos.com,www.t6.markitectos.com
+        - name: LETSENCRYPT_EMAIL
+          value: maxitromer@gmail.com
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-t7
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress-t7
+  template:
+    metadata:
+      labels:
+        app: wordpress-t7
+    spec:
+      containers:
+      - name: wordpress-t7
+        image: wordpress:6.6.2-php8.2-fpm-alpine
+        ports:
+        - containerPort: 9000
+        env:
+        # - name: WORDPRESS_DB_HOST
+        #   value: mysql-service
+        # - name: WORDPRESS_DB_USER
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: mysql-secrets
+        #       key: username
+        # - name: WORDPRESS_DB_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: mysql-secrets
+        #       key: password
+        # - name: WORDPRESS_DB_NAME
+        #   value: wordpress_t7
+        - name: VIRTUAL_HOST
+          value: t7.markitectos.com,www.t7.markitectos.com
+        - name: LETSENCRYPT_HOST
+          value: t7.markitectos.com,www.t7.markitectos.com
+        - name: LETSENCRYPT_EMAIL
+          value: maxitromer@gmail.com
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-nginx-conf
+data:
+  custom_nginx.conf: |
+    http {
+        fastcgi_cache_path /tmp/cache levels=1:2 keys_zone=wordpress_cache:10m max_size=10g inactive=60m use_temp_path=off;
+
+        # Configuración de sticky sessions
+        map $http_cookie $sticky_session_id {
+            default "";
+            "~*PHPSESSID=(?<id>[^;]+)" $id;
+        }
+
+        upstream wordpress-t6 {
+            server wordpress-t6:9000;
+            sticky route $sticky_session_id;
+        }
+
+        upstream wordpress-t7 {
+            server wordpress-t7:9000;
+            sticky route $sticky_session_id;
+        }
+
+        # Redirect www to non-www for t6.markitectos.com
+        server {
+            listen 80;
+            server_name www.t6.markitectos.com;
+            return 301 $scheme://t6.markitectos.com$request_uri;
+        }
+
+        # Redirect www to non-www for t7.markitectos.com
+        server {
+            listen 80;
+            server_name www.t7.markitectos.com;
+            return 301 $scheme://t7.markitectos.com$request_uri;
+        }
+
+        # Configuration for t6.markitectos.com
+        server {
+            listen 80;
+            server_name t6.markitectos.com;
+
+            location / {
+                proxy_pass http://wordpress-t6;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            location ~ \.php$ {
+                fastcgi_pass wordpress-t6;
+                fastcgi_index index.php;
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                
+                fastcgi_cache wordpress_cache;
+                fastcgi_cache_valid 200 60m;
+                fastcgi_cache_use_stale error timeout http_500 http_503 invalid_header updating;
+            }
+        }
+
+        # Configuration for t7.markitectos.com
+        server {
+            listen 80;
+            server_name t7.markitectos.com;
+
+            location / {
+                proxy_pass http://wordpress-t7;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            location ~ \.php$ {
+                fastcgi_pass wordpress-t7;
+                fastcgi_index index.php;
+                include fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                
+                fastcgi_cache wordpress_cache;
+                fastcgi_cache_valid 200 60m;
+                fastcgi_cache_use_stale error timeout http_500 http_503 invalid_header updating;
+            }
+        }
+    }

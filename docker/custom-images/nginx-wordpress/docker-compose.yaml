@@ -1,6 +1,6 @@
 services:
   wordpress:
-    image: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine
+    image: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v3
     ports:
       - "8080:80"
     environment:
@@ -8,11 +8,11 @@ services:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DB_USER: user
       WORDPRESS_DB_PASSWORD: password
+      PHP_INI_SCAN_DIR: :/usr/local/etc/php/conf.d/custom-conf
     depends_on:
       - db
     volumes:
-      - ./db-config.php:/var/www/html/db-config.php
-    #   - ./custom-wp-config.php:/var/www/html/wp-config.php
+      - ./custom-php.ini:/usr/local/etc/php/conf.d/custom-conf/custom-php.ini
 
   db:
     image: percona/percona-server:8.0.37-29

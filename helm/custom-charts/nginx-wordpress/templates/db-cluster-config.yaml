@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Values.global.uniqueName }}-db-cluster-config
+  namespace: {{ $.Values.global.namespace.name }}
+data:
+  db-cluster-config.php: |
+    <?php
+
+    global $w3tc_dbcluster_config;
+
+    $w3tc_dbcluster_config = array(
+      'databases' => array(
+        'master' => array(
+          'host'     => "{{ .Values.bitpokeDB.clusterName }}-mysql-master.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306",
+          'user'     => "{{ .Values.global.uniqueName }}-username",
+          'password' => getenv('WORDPRESS_DB_PASSWORD'),
+          'name'     => "{{ .Values.global.uniqueName }}-db-name"
+        ),
+        'slave' => array(
+          'host'     => "{{ .Values.bitpokeDB.clusterName }}-mysql-replicas.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306",
+          'user'     => "{{ .Values.global.uniqueName }}-username",
+          'password' => getenv('WORDPRESS_DB_PASSWORD'),
+          'name'     => "{{ .Values.global.uniqueName }}-db-name",
+          'write'    => false,
+          'read'     => true,
+          'timeout'  => 0.2
+        ),
+      )
+    );
