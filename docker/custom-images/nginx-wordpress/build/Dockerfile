@@ -15,7 +15,6 @@ ARG LUDICROUSDB_VERSION
 # ARG W3TC_VERSION
 ARG WP_DIR
 ARG WP_CONTENT_DIR
-
 # Install necessary packages and build dependencies
 RUN apk add --no-cache \
     libmemcached-dev \
@@ -26,7 +25,12 @@ RUN apk add --no-cache \
     zlib-dev \
     wget \
     unzip \
-    make
+    make \
+    redis
+
+# Add these lines to install phpredis
+RUN pecl install redis && \
+    docker-php-ext-enable redis
 
 # Install LudicrousDB and W3 Total Cache plugins, remove default plugins
 RUN wget https://github.com/stuttter/ludicrousdb/archive/refs/tags/${LUDICROUSDB_VERSION}.zip -O /tmp/ludicrousdb.zip \
@@ -54,8 +58,8 @@ RUN cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db.php ${WP_CO
     # && cp ${WP_CONTENT_DIR}/plugins/ludicrousdb/ludicrousdb/drop-ins/db-config.php ${WP_DIR}/db-config.php
 
 # Remove the WP pre-installed plugins    
-RUN rm -rf /var/www/html/wp-content/plugins/akismet \
-    && rm /var/www/html/wp-content/plugins/hello.php
+# RUN rm -rf /var/www/html/wp-content/plugins/akismet \
+#     && rm /var/www/html/wp-content/plugins/hello.php
 
 # Copy custom db-config.php (if you have a custom one)
 COPY db-config.php ${WP_DIR}/db-config.php
