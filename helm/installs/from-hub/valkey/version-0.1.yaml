@@ -1,0 +1,79 @@
+image:
+  registry: docker.io
+  repository: bitnami/valkey
+  tag: 8.0.0-debian-12-r0
+
+## @param architecture Valkey architecture. Allowed values: `standalone` or `replication`
+##
+architecture: replication
+
+auth:
+  enabled: true
+  sentinel: true
+  ## @param auth.existingSecret The name of an existing secret with Valkey credentials
+  ## NOTE: When it's set, the previous `auth.password` parameter is ignored
+  ##
+  existingSecret: "valkey-password"
+  ## @param auth.existingSecretPasswordKey Password key to be retrieved from existing secret
+  ## NOTE: ignored unless `auth.existingSecret` parameter is set
+  ##
+  existingSecretPasswordKey: "valkey-password"
+
+master:
+  persistence:
+    enabled: true
+    storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+  pdb:
+    create: true
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+  nodeSelector:
+    kubernetes.io/arch: amd64
+
+replica:
+  persistence:
+    enabled: true
+    storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+  pdb:
+    create: true
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+  nodeSelector:
+    kubernetes.io/arch: amd64
+
+sentinel:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/valkey-sentinel
+    tag: 8.0.0-debian-12-r0
+  masterSet: "mymaster"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+
+networkPolicy:
+  enabled: true
+  allowExternal: true
