@@ -64,14 +64,17 @@ spec:
         {{- end }}
       {{- if $.Values.bitpokeDB.enabled }}
       initContainers:
-        - name: init-db-cluster-config
-          image: busybox
-          command: ['sh', '-c', 'cp /tmp/db-cluster-config/db-cluster-config.php /var/www/html/wp-content/db-cluster-config.php && chown 82:82 /var/www/html/wp-content/db-cluster-config.php']
+        - name: init-wp-content
+          image: {{ .Values.global.deploymentCustomImage }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Initializing wp-content..."
+              cp -rn /var/www/html/wp-content/* /mnt/wp-content/
+              chown -R 82:82 /mnt/wp-content
           volumeMounts:
-            - name: db-cluster-config
-              mountPath: /tmp/db-cluster-config
             - name: {{ .Values.global.uniqueName }}-wp-content-pv
-              mountPath: /var/www/html/wp-content
+              mountPath: /mnt/wp-content
       {{- end }}
       containers:
         - name: nginx-wordpress
@@ -81,6 +84,11 @@ spec:
             - containerPort: 80
             - containerPort: 9000
           volumeMounts:
+            {{- if $.Values.bitpokeDB.enabled }}
+            - name: db-cluster-config
+              mountPath: /var/www/html/db-config.php
+              subPath: db-config.php
+            {{- end }}  
             {{- if $.Values.wordpress.customPHPini.enabled }}
             - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
               mountPath: /usr/local/etc/php/conf.d/custom-conf
@@ -116,4 +124,5 @@ spec:
               cpu: {{ .Values.resources.requests.cpu }}
               memory: {{ .Values.resources.requests.memory }}
             {{- end }}
+
   
