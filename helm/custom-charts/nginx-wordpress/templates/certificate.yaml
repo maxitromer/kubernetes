@@ -1,14 +1,14 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ $.Values.global.uniqueName }}-certificate
-  namespace: {{ $.Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-certificate
+  namespace: {{ $.Release.Namespace }}
   annotations:
     {{- if $.Values.SSLcertificate.keepOnUninstall }}
     helm.sh/resource-policy: keep
     {{- end }}
 spec:
-  secretName: {{ $.Values.global.uniqueName }}-ssl-secret
+  secretName: {{ $.Release.Name }}-ssl-secret
   issuerRef:
     {{- if .Values.SSLcertificate.productionReady }}
     name: letsencrypt-production
@@ -17,7 +17,9 @@ spec:
     {{- end }}
     kind: ClusterIssuer
   dnsNames:
-    {{- range $.Values.domains }}
-    - '{{ .name }}'
-    - 'www.{{ .name }}'
+    {{- range $.Values.domains.names }}
+    - '{{ . }}'
+    {{- if $.Values.domains.addWWW }}
+    - 'www.{{ . }}'
+    {{- end }}
     {{- end }}

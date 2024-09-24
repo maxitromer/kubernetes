@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $.Values.global.uniqueName }}-db-cluster-config
-  namespace: {{ $.Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-db-cluster-config
+  namespace: {{ $.Release.Namespace }}
 data:
   db-config.php: |
     <?php

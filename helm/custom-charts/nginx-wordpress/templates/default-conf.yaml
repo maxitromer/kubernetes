@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $.Values.global.uniqueName }}-default-conf
-  namespace: {{ $.Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-default-conf
+  namespace: {{ $.Release.Namespace }}
 data:
   default.conf: |
 
@@ -11,9 +11,10 @@ data:
     # Define path to cache and memory zone. The memory zone should be unique.
     # keys_zone=single-site-with-caching.com:100m creates the memory zone and sets the maximum size in MBs.
     # inactive=60m will remove cached items that haven't been accessed for 60 minutes or more.
-    fastcgi_cache_path /var/www/html/wp-content/nginx-cache levels=1:2 keys_zone=nginx-wordpress:{{ $.Values.nginx.customNginxConf.cacheSizeMB }}m inactive={{ $.Values.nginx.customNginxConf.removeInactiveItemsMinutes }}m;
-    {{- end }}
+    # fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=nginx-wordpress:{{ $.Values.nginx.customNginxConf.cacheSizeMB }}m inactive={{ $.Values.nginx.customNginxConf.removeInactiveItemsMinutes }}m;
+    fastcgi_cache_path /var/www/html/wp-content/nginx-cache levels=1:2 keys_zone=nginx-wordpress:{{ $.Values.nginx.customNginxConf.cacheSizeMB }}m inactive={{ $.Values.nginx.customNginxConf.removeInactiveItemsMinutes }}m;    
 
+    {{- end }}
     server {
 
         # Ports to listen on
@@ -23,7 +24,7 @@ data:
         root /var/www/html;
 
         # Server name to listen for
-        server_name {{ range .Values.domains }}{{ .name }} www.{{ .name }} {{ end }};
+        server_name {{ range .Values.domains.names }}{{ . }} {{ if $.Values.domains.addWWW }}www.{{ . }} {{ end }}{{ end }};
 
         # File to be used as index
         index index.php;
@@ -146,14 +147,13 @@ data:
         }
 
         # Don't cache URIs containing the following segments
-        if ($request_uri ~* "/wp-admin/|/wp-json/|/xmlrpc.php|wp-.*.php|/feed/|index.php|sitemap(_index)?.xml|/cart/|/checkout/|/my-account/") {
+        if ($request_uri ~* "{{ range $index, $url := $.Values.nginx.customNginxConf.dontCacheURLs }}{{if $index}}|{{end}}{{ $url }}{{ end }}") {
           set $skip_cache 1;
         }
-
         # Don't use the cache for logged in users or recent commenters
-        if ($http_cookie ~* "comment_author|wordpress_[a-f0-9]+|wp-postpass|wordpress_no_cache|wordpress_logged_in|edd_items_in_cart|woocommerce_items_in_cart") {
+        if ($http_cookie ~* "{{ range $index, $cookie := $.Values.nginx.customNginxConf.dontCacheCookies }}{{if $index}}|{{end}}{{ $cookie }}{{ end }}") {
           set $skip_cache 1;
-        }      
+        }
 
         # Add this new location block for cache purging
         location ~ /purge(/.*) {

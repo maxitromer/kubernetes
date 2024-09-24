@@ -1,16 +1,15 @@
 {{- if $.Values.global.autoscaling.enabled }}
-{{- if $.Values.wordpress.resources.enableRequests }}
-{{- if $.Values.nginx.resources.enableRequests }}
+{{- if $.Values.resources.enableRequests }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ $.Values.global.uniqueName }}-hpa
-  namespace: {{ $.Values.global.namespace.name }}  
+  name: {{ $.Release.Name }}-hpa
+  namespace: {{ $.Release.Namespace }}  
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Values.global.uniqueName }}-nginx-wordpress
+    name: {{ $.Release.Name }}-nginx-wordpress
   minReplicas: {{ $.Values.global.autoscaling.minReplicas }}
   maxReplicas: {{ $.Values.global.autoscaling.maxReplicas }}
   metrics:
@@ -20,6 +19,5 @@ spec:
       target:
         type: Utilization
         averageUtilization: {{ $.Values.global.autoscaling.targetCPUUtilization }}
-{{- end }}
 {{- end }}
 {{- end }}

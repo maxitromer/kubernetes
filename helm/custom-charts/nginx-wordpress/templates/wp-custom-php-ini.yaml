@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
-  namespace: {{ .Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-wp-custom-php-ini
+  namespace: {{ $.Release.Namespace }}
 data:
   custom-php.ini: |+
     upload_max_filesize = {{ .Values.wordpress.customPHPini.uploadMaxFilesize }}

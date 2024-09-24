@@ -1,24 +1,18 @@
 # -- NOT TODO (FOR NOW) --
 
-# Add the option to keep the lets encrypt certificates when uninstall
 # Add metrics for prometheus
+# Add the cloudflare DNS creation to the chart.
 
 # -- TODO --
 
-# Add a nodeSelector to every pod in the deployment including los initContainers
-# Add the posibility to include the nginx server to the wordpress container (install nginx in the wordpress container) to use less resourses
-# Add the posibility to select the type of container to use with nginx (the alpine with nginx intalled or the actual nginx container from docker but without the cache plugin)
-# Add the posibility to change the URLs that not are cached on de default conf of nginx. The idea here is to exclude all the carts and checkouts.
-# Add the cloudflare DNS creation to the chart.
-# Add the psibility to split databases (read and write)
+
 # Solve the www-redirect to domain
-# add the posibility to keep the SSL certificate
-# add the retail the PVC on deletion or uninstallation
 # add a RecurringJob for longhorn snapshots and backups
 # Add nodeaffinity to ensure pods are scheduled on r7-11 first
 
 # -- DONE --
 
+# Add the posibility to include the nginx server to the wordpress container (install nginx in the wordpress container) to use less resourses
 # Add the user and database creation to the chart.
 # Add the option for production or staging certificates for lets encrypt
 # Include the bitpoke database and user creation
@@ -27,16 +21,20 @@
 # Solve the SSL certificate creation / validation problem
 # When chart is uninstalled is important to keep the database, the user, and the grants.
 # When the chats is uninstalled is important to keep the PV and the PVC with all the data.
+# Add the posibility to select the type of container to use with nginx (the alpine with nginx intalled or the actual nginx container from docker but without the cache plugin)
+# Add the posibility to change the URLs that not are cached on de default conf of nginx. The idea here is to exclude all the carts and checkouts.
+# Add the psibility to split databases (read and write)
+# add the posibility to keep the SSL certificate
+# add the retail the PVC on deletion or uninstallation
+# Add the option to keep the lets encrypt certificates when uninstall
+# Add a nodeSelector to every pod in the deployment including los initContainers
+
 
 global:
-  uniqueName: who
-  namespace:
-    create: false
-    name: default
-    keepOnUninstall: true
-  replicas: 1
+  customImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
   imagePullPolicy : IfNotPresent # Always
-  # Require Resource Requests (in both containers) to work, limits are optional but recommended
+  replicas: 1
+  # Autoscaling require resource requests to work, limits are optional but recommended
   autoscaling:
     enabled: false
     minReplicas: 2
@@ -44,41 +42,34 @@ global:
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
-  deploymentCustomImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
+  enableReadinessAndLivenessProbe: false
+
 
 SSLcertificate:
-  productionReady: true  # Else letsencrypt-staging
+  productionReady: true  # on false will use letsencrypt-staging
   keepOnUninstall: true
 
 resources:
-  enableLimits: true
+  enableLimits: false # false for unlimited resources
   limits:
-    cpu: "200m"
-    memory: "256Mi"
+    cpu: "2000m" # 0 for unlimited CPU
+    memory: "2048Mi" # 0 for unlimited RAM
   enableRequests: true
   requests:
-    cpu: "100m"
-    memory: "128Mi"
+    cpu: "1000m"
+    memory: "1024Mi"
 
 
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
 domains:
-  - name: t3.markitectos.com
-  - name: www.t3.markitectos.com  
+  addWWW: true
+  redirectWWWtoNonWWW: true
+  names:
+    -  t3.markitectos.com
+    -  t4.markitectos.com  
 
 nginx:
-  image: alpine:3.20.2
-  enableReadinessAndLivenessProbe: false
-  resources:
-    enableLimits: false
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    enableRequests: true
-    requests:
-      cpu: 250m
-      memory: 256Mi
   customNginxConf:
     enabled: true
     clientMaxBodySizeMB: 100
@@ -86,7 +77,31 @@ nginx:
     enableFastCGICache: true
     cacheSizeMB: 100
     removeInactiveItemsMinutes: 60
+    dontCacheURLs: 
+      - "/wp-admin/"
+      - "/wp-json/"
+      - "/xmlrpc.php"
+      - "wp-.*.php"
+      - "/feed/"
+      - "index.php"
+      - "sitemap(_index)?.xml"
+      - "/cart/"
+      - "/checkout/"
+      - "/my-account/"    
+    dontCacheCookies: 
+      - "wordpress_test_cookie"
+      - "comment_author_"
+      - "woocommerce_cart_hash"
+      - "woocommerce_items_in_cart"
+      - "wp_woocommerce_session_"
+      - "wordpress_[a-f0-9]+"
+      - "wp-postpass"
+      - "wordpress_no_cache"
+      - "wordpress_logged_in"    
     enableBrowserCache: true
+  NginxHelper:
+    enablePath: true
+    enableLogs: true
 
 redis: 
   enabled: true
@@ -102,24 +117,14 @@ redis:
 
 
 wordpress:
-  image: wordpress:6.6.1-php8.3-fpm-alpine
-  # will enable WP_DEBUG in wp-config.php for logs in: /var/www/html/wp-content/debug.log
+  # will enable WP_DEBUG in wp-config.php for logs in the container logs
   debug: true
+  enableErrorDisplay: true
   https: true
   DisableAutoUpdate: true
   # this increase too much the time to start the pod
   removePreintalledPluginsAndThemes: false 
-  enableReadinessAndLivenessProbe: false
   enableMemcached: false
-  resources:
-    enableLimits: false
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    enableRequests: true
-    requests:
-      cpu: 250m
-      memory: 256Mi
   customPHPini:
     enabled: true
     uploadMaxFilesize: 100M

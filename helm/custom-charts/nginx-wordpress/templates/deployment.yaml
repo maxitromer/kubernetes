@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: {{ .Values.global.namespace.name }}
-  name: {{ .Values.global.uniqueName }}-nginx-wordpress
+  namespace: {{ $.Release.Namespace }}
+  name: {{ $.Release.Name }}-nginx-wordpress
 spec:
   {{- if not $.Values.global.autoscaling.enabled }}
   replicas: {{ .Values.global.replicas }}
@@ -15,11 +15,11 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: {{ .Values.global.uniqueName }}-nginx-wordpress
+      app: {{ $.Release.Name }}-nginx-wordpress
   template:
     metadata:
       labels:
-        app: {{ .Values.global.uniqueName }}-nginx-wordpress
+        app: {{ $.Release.Name }}-nginx-wordpress
     spec:
       affinity:
         {{- if $.Values.global.preferToRunOnAMD64 }}
@@ -43,74 +43,154 @@ spec:
                     - key: app
                       operator: In
                       values:
-                        - {{ .Values.global.uniqueName }}-nginx-wordpress
+                        - {{ $.Release.Name }}-nginx-wordpress
                 topologyKey: "kubernetes.io/hostname"
         {{- end }}
       volumes:
-        {{- if $.Values.wordpress.customPHPini.enabled }}
-        - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+        {{- if $.Values.nginx.customNginxConf.enabled }}
+        - name: nginx-config
           configMap:
-            name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+            name: {{ $.Release.Name }}-nginx-conf
+        - name: nginx-default-config
+          configMap:
+            name: {{ $.Release.Name }}-default-conf
+        - name: nginx-cache
+          emptyDir: {}
+        # - name: nginx-tmp
+        #   emptyDir: {}          
+        # - name: nginx-logs
+        #   emptyDir: {}
+        # - name: nginx-modules
+        #   emptyDir: {}
+        # - name: var-lib
+        #   emptyDir: {}
+        # - name: var
+        #   emptyDir: {}                              
+        {{- end }}
+        {{- if $.Values.wordpress.customPHPini.enabled }}
+        - name: {{ $.Release.Name }}-wp-custom-php-ini
+          configMap:
+            name: {{ $.Release.Name }}-wp-custom-php-ini
         {{- end }}
         {{- if .Values.wordpress.storage.enabled }}
-        - name: {{ .Values.global.uniqueName }}-wp-content-pv
+        - name: {{ $.Release.Name }}-wp-content-pv
           persistentVolumeClaim:
-            claimName: {{ .Values.global.uniqueName }}-wp-content-pvc
+            claimName: {{ $.Release.Name }}-wp-content-pvc
         {{- end }}
         {{- if $.Values.bitpokeDB.enabled }}
         - name: db-cluster-config
           configMap:
-            name: {{ .Values.global.uniqueName }}-db-cluster-config
+            name: {{ $.Release.Name }}-db-cluster-config
         {{- end }}
       {{- if $.Values.bitpokeDB.enabled }}
       initContainers:
         - name: init-wp-content
-          image: {{ .Values.global.deploymentCustomImage }}
+          image: {{ .Values.global.customImage }}
           command: ["/bin/sh", "-c"]
           args:
             - |
               echo "Initializing wp-content..."
               cp -rn /var/www/html/wp-content/* /mnt/wp-content/
               chown -R 82:82 /mnt/wp-content
+              chown -R 82:82 /mnt/nginx-cache
+              chmod -R 755 /mnt/nginx-cache
+              # chown -R :82 /mnt/nginx-tmp
+              # chown -R :82 /mnt/nginx-logs
+              # chown -R :82 /mnt/nginx-modules
+              # chown -R :82 /mnt/var/lib
+              # chown -R :82 /mnt/var
+          securityContext:
+            runAsUser: 0
           volumeMounts:
-            - name: {{ .Values.global.uniqueName }}-wp-content-pv
+            - name: {{ $.Release.Name }}-wp-content-pv
               mountPath: /mnt/wp-content
+            - name: nginx-cache
+              mountPath: /mnt/nginx-cache
+            # - name: nginx-tmp
+            #   mountPath: /mnt/nginx-tmp
+            # - name: nginx-logs
+            #   mountPath: /mnt/nginx-logs
+            # - name: nginx-modules
+            #   mountPath: /mnt/nginx-modules
+            # - name: var-lib
+            #   mountPath: /mnt/var/lib
+            # - name: var
+            #   mountPath: /mnt/var
       {{- end }}
       containers:
         - name: nginx-wordpress
-          image: {{ .Values.global.deploymentCustomImage }}
+          image: {{ .Values.global.customImage }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          # securityContext:
+          #   runAsUser: 82
+          #   runAsGroup: 82
           ports:
             - containerPort: 80
             - containerPort: 9000
+          {{- if .Values.global.enableReadinessAndLivenessProbe }}
+          readinessProbe:
+            httpGet:
+              path: /wp-admin/install.php
+              port: 80
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /wp-login.php
+              port: 80
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            failureThreshold: 3
+          {{- end }}
           volumeMounts:
+              {{- if $.Values.nginx.customNginxConf.enabled }}
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-default-config
+              mountPath: /etc/nginx/http.d/default.conf
+              subPath: default.conf
+            - name: nginx-cache
+              mountPath: /var/www/html/wp-content/nginx-cache
+            # - name: nginx-tmp
+            #   mountPath: /var/lib/nginx
+            # - name: nginx-logs
+            #   mountPath: /var/lib/nginx/logs
+            # - name: nginx-modules
+            #   mountPath: /var/lib/nginx/modules
+            # - name: var-lib
+            #   mountPath: /var/lib
+            # - name: var
+            #   mountPath: /var
+              {{- end }}
             {{- if $.Values.bitpokeDB.enabled }}
             - name: db-cluster-config
               mountPath: /var/www/html/db-config.php
               subPath: db-config.php
             {{- end }}  
             {{- if $.Values.wordpress.customPHPini.enabled }}
-            - name: {{ .Values.global.uniqueName }}-wp-custom-php-ini
+            - name: {{ $.Release.Name }}-wp-custom-php-ini
               mountPath: /usr/local/etc/php/conf.d/custom-conf
               readOnly: true
             {{- end }}
             {{- if .Values.wordpress.storage.enabled }}
-            - name: {{ .Values.global.uniqueName }}-wp-content-pv
+            - name: {{ $.Release.Name }}-wp-content-pv
               mountPath: /var/www/html/wp-content
             {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ .Values.global.uniqueName }}-wordpress-configmap
+                name: {{ $.Release.Name }}-wordpress-configmap
           env:
             - name: WORDPRESS_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   {{- if $.Values.bitpokeDB.enabled }}
-                  name: {{ .Values.global.uniqueName }}-bitpoke-db-pass
+                  name: {{ $.Release.Name }}-bitpoke-db-pass
                   key: password
                   {{- end }}
                   {{- if not $.Values.bitpokeDB.enabled }}
-                  name: {{ .Values.global.uniqueName }}-db-pass
+                  name: {{ $.Release.Name }}-db-pass
                   key: password
                   {{- end }}
           resources:
@@ -124,5 +204,18 @@ spec:
               cpu: {{ .Values.resources.requests.cpu }}
               memory: {{ .Values.resources.requests.memory }}
             {{- end }}
-
-  
+          {{- if $.Values.wordpress.removePreintalledPluginsAndThemes }}
+          lifecycle:
+            postStart:
+              exec:
+                command: 
+                  - "/bin/sh"
+                  - "-c"
+                  - >
+                    sleep 120 &&
+                    rm -rf /var/www/html/wp-content/themes/twentytwentytwo &&
+                    rm -rf /var/www/html/wp-content/themes/twentytwentythree &&
+                    rm -rf /var/www/html/wp-content/plugins/akismet &&
+                    rm -f /var/www/html/wp-content/plugins/hello.php &&
+                    echo "Post-start script execution completed"
+          {{- end }}  

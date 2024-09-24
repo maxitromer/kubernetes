@@ -1,29 +1,45 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ $.Values.global.uniqueName }}-ingress-route
-  namespace: {{ $.Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-ingress-route
+  namespace: {{ $.Release.Namespace }}
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`{{ $domain.name }}`){{ end }}
+    - match: {{ range $index, $domain := $.Values.domains.names }}{{ if $index }} || {{ end }}Host(`{{ $domain }}`){{ end }}
       kind: Rule
       services:
-        - name: {{ .Values.global.uniqueName }}-nginx-wordpress
+        - name: {{ $.Release.Name }}-nginx-wordpress
           port: 80
           sticky:
             cookie:
               httpOnly: true
-              name: {{ $.Values.global.uniqueName }}-sticky-cookie
+              name: {{ $.Release.Name }}-sticky-cookie
               secure: true
               sameSite: none
           strategy: RoundRobin
       middlewares:
-        - name: {{ $.Values.global.uniqueName }}-default-headers
-    - match: {{ range $index, $domain := $.Values.domains }}{{ if $index }} || {{ end }}Host(`www.{{ $domain.name }}`){{ end }}
+        - name: {{ $.Release.Name }}-default-headers
+    {{- if $.Values.domains.addWWW }}
+    - match: {{ range $index, $domain := $.Values.domains.names }}{{ if $index }} || {{ end }}Host(`www.{{ $domain }}`){{ end }}
       kind: Rule
       middlewares:
-        - name: {{ $.Values.global.uniqueName }}-www-redirect
+        {{- if $.Values.domains.redirectWWWtoNonWWW }}
+        - name: {{ $.Release.Name }}-to-non-www-redirect
+        {{- else }}
+        - name: {{ $.Release.Name }}-default-headers
+      services:
+        - name: {{ $.Release.Name }}-nginx-wordpress
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: {{ $.Release.Name }}-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+        {{- end }}
+    {{- end }}  
   tls:
-    secretName: {{ $.Values.global.uniqueName }}-ssl-secret
+    secretName: {{ $.Release.Name }}-ssl-secret

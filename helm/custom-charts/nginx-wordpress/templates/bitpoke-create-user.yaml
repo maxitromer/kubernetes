@@ -2,24 +2,24 @@
 apiVersion: mysql.presslabs.org/v1alpha1
 kind: MysqlUser
 metadata:
-  name: {{ .Values.global.uniqueName }}-user
+  name: {{ $.Release.Name }}-user
   namespace: {{ .Values.bitpokeDB.namespace }}
   annotations:
     {{- if $.Values.bitpokeDB.keepOnUninstall }}
     helm.sh/resource-policy: keep
     {{- end }}
 spec:
-  user: {{ .Values.global.uniqueName }}-username
+  user: {{ $.Release.Name }}-username
   clusterRef:
     name: {{ .Values.bitpokeDB.clusterName }}
     namespace: {{ .Values.bitpokeDB.namespace }}
   password:
-    name: {{ .Values.global.uniqueName }}-bitpoke-db-pass
+    name: {{ $.Release.Name }}-bitpoke-db-pass
     key: password    
   allowedHosts:
     - "%"
   permissions:
-    - schema: {{ .Values.global.uniqueName }}-db-name
+    - schema: {{ $.Release.Name }}-db-name
       tables: ["*"]
       permissions:
         - ALL PRIVILEGES

@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.global.uniqueName }}-wp-content-pvc
-  namespace: {{ .Values.global.namespace.name }}
+  name: {{ $.Release.Name }}-wp-content-pvc
+  namespace: {{ $.Release.Namespace }}
   annotations:
     {{- if $.Values.wordpress.storage.keepOnUninstall }}
     helm.sh/resource-policy: keep
