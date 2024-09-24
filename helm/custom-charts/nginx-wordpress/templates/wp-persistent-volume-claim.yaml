@@ -8,13 +8,6 @@ metadata:
     {{- if $.Values.wordpress.storage.keepOnUninstall }}
     helm.sh/resource-policy: keep
     {{- end }}
-  labels:
-  {{- if .Values.wordpress.storage.snapshots.enabled }}
-    recurring-job.longhorn.io/{{ .Release.Name }}-wp-content-snapshot: enabled
-    {{- end }}
-    {{- if .Values.wordpress.storage.backups.enabled }}
-    recurring-job.longhorn.io/{{ .Release.Name }}-wp-content-backup: enabled
-    {{- end }}
 spec:
   accessModes:
     - {{ .Values.wordpress.storage.accessModes | quote }}
