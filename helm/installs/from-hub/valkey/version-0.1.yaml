@@ -10,14 +10,7 @@ architecture: replication
 auth:
   enabled: true
   sentinel: true
-  ## @param auth.existingSecret The name of an existing secret with Valkey credentials
-  ## NOTE: When it's set, the previous `auth.password` parameter is ignored
-  ##
-  existingSecret: "valkey-password"
-  ## @param auth.existingSecretPasswordKey Password key to be retrieved from existing secret
-  ## NOTE: ignored unless `auth.existingSecret` parameter is set
-  ##
-  existingSecretPasswordKey: "valkey-password"
+  password: "rK#W4w&n4n2J^r9CWDT"
 
 master:
   persistence:
