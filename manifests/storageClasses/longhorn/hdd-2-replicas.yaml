@@ -8,3 +8,4 @@ parameters:
   staleReplicaTimeout: "120"
   fromBackup: ""
   diskSelector: "hdd"
+  dataLocality: "best-effort"  

@@ -8,3 +8,4 @@ parameters:
   staleReplicaTimeout: "120"
   fromBackup: ""
   diskSelector: "nvme"
+  dataLocality: "best-effort"  
