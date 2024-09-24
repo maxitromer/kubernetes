@@ -22,9 +22,9 @@ spec:
         app: {{ $.Release.Name }}-nginx-wordpress
     spec:
       affinity:
-        {{- if $.Values.global.preferToRunOnAMD64 }}
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if $.Values.global.preferToRunOnAMD64 }}
             - weight: 90
               preference:
                 matchExpressions:
@@ -32,7 +32,23 @@ spec:
                     operator: In
                     values:
                       - amd64
-        {{- end }}
+            {{- end }}
+            {{- if $.Values.global.preferNodeR711thenR912 }}
+            - weight: 80
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r7-11
+            - weight: 50
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r9-12
+            {{- end }}
         {{- if $.Values.global.preferToDistributePods }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

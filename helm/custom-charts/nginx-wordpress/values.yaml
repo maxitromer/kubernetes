@@ -8,7 +8,7 @@
 
 # Solve the www-redirect to domain
 # add a RecurringJob for longhorn snapshots and backups
-# Add nodeaffinity to ensure pods are scheduled on r7-11 first
+
 
 # -- DONE --
 
@@ -28,6 +28,7 @@
 # add the retail the PVC on deletion or uninstallation
 # Add the option to keep the lets encrypt certificates when uninstall
 # Add a nodeSelector to every pod in the deployment including los initContainers
+# Add nodeaffinity to ensure pods are scheduled on r7-11 first
 
 
 global:
@@ -42,6 +43,7 @@ global:
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
+  preferNodeR711thenR912: true
   enableReadinessAndLivenessProbe: false
 
 
@@ -140,6 +142,14 @@ wordpress:
     # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
     size: 2Gi
     keepOnUninstall: false
+    backups: # Se suben a la nube (S3, etc.)
+      enabled: true
+      schedule: "15 * * * *" # "0 4 * * SUN" # Cada domingo 4 AM
+      retention: 4 # Retener los últimos 4
+    snapshots: # Se realizan en local
+      enabled: true
+      schedule: "15 * * * *" # "0 2 * * *" # Cada día a las 2 AM
+      retention: 7 # Retener los últimos 7
   database:
     # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
     host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
