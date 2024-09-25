@@ -1,0 +1,46 @@
+# DO THIS: k apply -f local-path-config-map-v1.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: local-path-config
+  namespace: kube-system
+data:
+  config.json: |-
+        {
+                "nodePathMap":[
+                {
+                  "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                  "paths":["/var/lib/rancher/k3s/storage"]
+                },
+                {
+                  "node":"r7-11",
+                  "paths":["/var/lib/rancher/k3s/storage", "/mnt/raid-ssd-cached", "/mnt/m2", "/mnt/hdd"]
+                },
+                {
+                  "node":"r9-12",
+                  "paths":["/var/lib/rancher/k3s/storage", "/mnt/raid-ssd-cached", "/mnt/m2", "/mnt/hdd"]
+                },
+                {
+                  "node":"r9-13",
+                  "paths":["/var/lib/rancher/k3s/storage", "/mnt/raid-ssd-cached", "/mnt/m2"]
+                }
+                ]
+        }
+  setup: |-
+        #!/bin/sh
+        set -eu
+        mkdir -m 0777 -p "${VOL_DIR}"
+        chmod 700 "${VOL_DIR}/.."
+  teardown: |-
+        #!/bin/sh
+        set -eu
+        rm -rf "${VOL_DIR}"
+  helperPod.yaml: |-
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: helper-pod
+        spec:
+          containers:
+          - name: helper-pod
+            image: busybox
