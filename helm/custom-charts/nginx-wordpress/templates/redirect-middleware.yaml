@@ -1,12 +1,15 @@
 {{- if and .Values.domains.addWWW .Values.domains.redirectWWWtoNonWWW }}
+{{- range .Values.domains.names }}
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: {{ $.Release.Name }}-to-non-www-redirect
+  name: {{ . | replace "." "-" }}-www-redirect
   namespace: {{ $.Release.Namespace }}
 spec:
   redirectRegex:
-    regex: ^https?://www\.(.+)
-    replacement: https://${1}
+    regex: ^https?://www\.{{ . | replace "." "\\." }}(.*)
+    replacement: https://{{ . }}${1}
     permanent: true
+{{- end }}
 {{- end }}

@@ -2,12 +2,12 @@
 
 # Add metrics for prometheus
 # Add the cloudflare DNS creation to the chart.
+# add a RecurringJob for longhorn snapshots and backups
 
 # -- TODO --
 
 
 # Solve the www-redirect to domain
-# add a RecurringJob for longhorn snapshots and backups
 
 
 # -- DONE --
@@ -47,10 +47,6 @@ global:
   enableReadinessAndLivenessProbe: false
 
 
-SSLcertificate:
-  productionReady: true  # on false will use letsencrypt-staging
-  keepOnUninstall: true
-
 resources:
   enableLimits: false # false for unlimited resources
   limits:
@@ -62,14 +58,17 @@ resources:
     memory: "1024Mi"
 
 
-
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
 domains:
   addWWW: true
-  redirectWWWtoNonWWW: true
+  redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
   names:
     -  t3.markitectos.com
     -  t4.markitectos.com  
+
+SSLcertificate:
+  productionReady: false  # on false will use letsencrypt-staging
+  keepOnUninstall: false
 
 nginx:
   customNginxConf:
@@ -116,8 +115,6 @@ redis:
   database: 0
   password: "rK#W4w&n4n2J^r9CWDT"
 
-
-
 wordpress:
   # will enable WP_DEBUG in wp-config.php for logs in the container logs
   debug: true
@@ -143,7 +140,6 @@ wordpress:
     size: 2Gi
     keepOnUninstall: false
   database:
-    # DIRECT TO NODES: whoami-data-pxc-db-pxc-0.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-1.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306,whoami-data-pxc-db-pxc-2.whoami-data-pxc-db-pxc.whoami.svc.cluster.local:3306
     host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
     name: whoami_markitectos
     user: whoami_markitectos_user

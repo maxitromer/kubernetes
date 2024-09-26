@@ -1,13 +1,15 @@
+{{- range .Values.domains.names }}
+---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ $.Release.Name }}-ingress-route
+  name: {{ $.Release.Name }}-ingress-route-{{ . | replace "." "-" }}
   namespace: {{ $.Release.Namespace }}
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: {{ range $index, $domain := $.Values.domains.names }}{{ if $index }} || {{ end }}Host(`{{ $domain }}`){{ end }}
+    - match: Host(`{{ . }}`)
       kind: Rule
       services:
         - name: {{ $.Release.Name }}-nginx-wordpress
@@ -15,31 +17,31 @@ spec:
           sticky:
             cookie:
               httpOnly: true
-              name: {{ $.Release.Name }}-sticky-cookie
+              name: {{ . | replace "." "-" }}-sticky-cookie
               secure: true
               sameSite: none
           strategy: RoundRobin
       middlewares:
-        - name: {{ $.Release.Name }}-default-headers
-    {{- if $.Values.domains.addWWW }}
-    - match: {{ range $index, $domain := $.Values.domains.names }}{{ if $index }} || {{ end }}Host(`www.{{ $domain }}`){{ end }}
-      kind: Rule
-      middlewares:
-        {{- if $.Values.domains.redirectWWWtoNonWWW }}
-        - name: {{ $.Release.Name }}-to-non-www-redirect
-        {{- else }}
-        - name: {{ $.Release.Name }}-default-headers
-      services:
-        - name: {{ $.Release.Name }}-nginx-wordpress
-          port: 80
-          sticky:
-            cookie:
-              httpOnly: true
-              name: {{ $.Release.Name }}-sticky-cookie
-              secure: true
-              sameSite: none
-          strategy: RoundRobin
-        {{- end }}
-    {{- end }}  
+        - name: {{ . | replace "." "-" }}-default-headers
   tls:
-    secretName: {{ $.Release.Name }}-ssl-secret
+    secretName: {{ . | replace "." "-" }}-{{ if $.Values.SSLcertificate.productionReady }}prod{{ else }}staging{{ end }}-ssl-secret
+
+{{- if $.Values.domains.addWWW }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $.Release.Name }}-ingress-route-www-{{ . | replace "." "-" }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`www.{{ . }}`)
+      kind: Rule
+      middlewares:
+        - name: {{ . | replace "." "-" }}-www-redirect
+  tls:
+    secretName: {{ . | replace "." "-" }}-{{ if $.Values.SSLcertificate.productionReady }}prod{{ else }}staging{{ end }}-ssl-secret
+{{- end }}
+{{- end }}

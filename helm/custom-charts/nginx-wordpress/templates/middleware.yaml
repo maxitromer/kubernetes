@@ -1,7 +1,9 @@
+{{- range .Values.domains.names }}
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: {{ $.Release.Name }}-default-headers
+  name: {{ . | replace "." "-" }}-default-headers
   namespace: {{ $.Release.Namespace }}
 spec:
   headers:
@@ -14,3 +16,4 @@ spec:
     customFrameOptionsValue: SAMEORIGIN
     customRequestHeaders:
       X-Forwarded-Proto: https
+{{- end }}
