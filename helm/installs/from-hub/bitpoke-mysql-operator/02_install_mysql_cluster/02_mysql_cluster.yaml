@@ -56,7 +56,7 @@ spec:
   ## Configs that will be added to my.cnf for cluster
   mysqlConf:
     innodb_buffer_pool_size: 20G
-    innodb_log_file_size: 1G
+    # innodb_log_file_size: 1G
     innodb_flush_log_at_trx_commit: 1
     innodb_flush_method: O_DIRECT
     innodb_io_capacity: 2000
@@ -78,6 +78,15 @@ spec:
     innodb_max_dirty_pages_pct: 50
     innodb_buffer_pool_dump_at_shutdown: 1
     innodb_buffer_pool_load_at_startup: 1
+    ## New configs
+    skip_replica_start: 1  # Instead of skip_slave_start
+    authentication_policy: '*'  # Instead of default_authentication_plugin
+    relay_log: '/var/lib/mysql/my-cluster-mysql-relay-bin'
+    relay_log_index: '/var/lib/mysql/my-cluster-mysql-relay-bin.index'
+    secure_file_priv: '/var/lib/mysql-files'
+    innodb_redo_log_capacity: 2G  # Instead of innodb_log_file_size
+    binlog_format: ROW
+    # expire_logs_days: 7  # Or adjust as needed 
 
   ## Specify additional pod specification
   podSpec:
