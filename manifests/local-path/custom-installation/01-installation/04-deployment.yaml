@@ -19,15 +19,40 @@ spec:
     spec:
       priorityClassName: "system-node-critical"
       serviceAccountName: local-path-provisioner-service-account
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: "no-arm32-enabled"
+                    operator: "In"
+                    values:
+                      - "true"
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: "no-arm-enabled"
+                    operator: "In"
+                    values:
+                      - "true"
       tolerations:
-          - key: "CriticalAddonsOnly"
-            operator: "Exists"
-          - key: "node-role.kubernetes.io/control-plane"
-            operator: "Exists"
-            effect: "NoSchedule"
-          - key: "node-role.kubernetes.io/master"
-            operator: "Exists"
-            effect: "NoSchedule"
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "no-arm32-enabled"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+        - key: "no-arm-enabled"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
       containers:
       - name: local-path-provisioner
         image: "rancher/local-path-provisioner:v0.0.29"
