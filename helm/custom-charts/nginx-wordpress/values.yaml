@@ -7,9 +7,6 @@
 # -- TODO --
 
 
-# Solve the www-redirect to domain
-
-
 # -- DONE --
 
 # Add the posibility to include the nginx server to the wordpress container (install nginx in the wordpress container) to use less resourses
@@ -29,6 +26,7 @@
 # Add the option to keep the lets encrypt certificates when uninstall
 # Add a nodeSelector to every pod in the deployment including los initContainers
 # Add nodeaffinity to ensure pods are scheduled on r7-11 first
+# Solve the www-redirect to domain problem
 
 
 global:
