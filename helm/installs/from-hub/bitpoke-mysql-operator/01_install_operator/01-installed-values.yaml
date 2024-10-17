@@ -1,8 +1,19 @@
+replicaCount: 2
+
 nodeSelector:
   kubernetes.io/arch: amd64
 
 # Is preferred to have the mysql operator running if electricity goes off, thats why this affinity exist
 affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/instance
+          operator: In
+          values:
+          - bitpoke-mysql-operator
+      topologyKey: kubernetes.io/hostname
   nodeAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
     - weight: 100
@@ -49,7 +60,7 @@ orchestrator:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    storageClass: "hdd-local-path"
+    storageClass: "longhorn-hdd-2-replicas"
     # annotations: {}
     # selector:
     #  matchLabels: {}
