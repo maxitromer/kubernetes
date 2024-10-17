@@ -70,3 +70,48 @@ sentinel:
 networkPolicy:
   enabled: true
   allowExternal: true
+
+metrics:
+  enabled: true
+  containerPorts:
+    http: 9121
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+  service:
+    enabled: true
+    type: ClusterIP
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+    metricsPath: /metrics
+    namespace: monitoring  # Change to your desired namespace
+    labels: 
+      app: redis  # Customize as needed
+  podMonitor:
+    enabled: true
+    namespace: monitoring  # Change to your desired namespace
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: 
+      app: redis  # Customize as needed
+  prometheusRule:
+    enabled: true
+    namespace: monitoring  # Change to your desired namespace
+    additionalLabels:
+      app: redis  # Customize as needed
+    rules:
+      - alert: RedisDown
+        expr: up{app="redis"} == 0  # Use a defined label instead
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis instance is down"
+          description: "Redis instance is down for more than 5 minutes."  # Removed the dynamic variable
+
