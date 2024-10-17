@@ -1,0 +1,66 @@
+# replicaCount -- Number of controller replicas.
+replicaCount: 2
+
+image:
+  # image.repository -- MOCO image repository to use.
+  repository: ghcr.io/cybozu-go/moco
+
+  # image.pullPolicy -- MOCO image pulling policy.
+  pullPolicy: IfNotPresent
+
+  # image.tag -- MOCO image tag to use.
+  # @default -- `{{ .Chart.AppVersion }}`
+  tag:  # 0.23.2
+
+# resources -- resources used by moco-controller.
+resources:
+  requests:
+    cpu: 100m
+    memory: 20Mi
+
+crds:
+  # crds.enabled -- Install and update CRDs as part of the Helm chart.
+  enabled: true
+
+# extraArgs -- Additional command line flags to pass to moco-controller binary.
+extraArgs: []
+
+# nodeSelector -- nodeSelector used by moco-controller.
+nodeSelector: {}
+
+# affinity -- affinity used by moco-controller.
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - moco
+      topologyKey: kubernetes.io/hostname
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - r7-11
+    - weight: 50
+      preference:
+        matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - r9-12
+
+# tolerations -- tolerations used by moco-controller.
+tolerations: []
+
+# topologySpreadConstraints -- topologySpreadConstraints used by moco-controller.
+topologySpreadConstraints: []
+
+# priorityClassName -- PriorityClass used by moco-controller.
+priorityClassName: ""
