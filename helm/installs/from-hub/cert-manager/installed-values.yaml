@@ -1,0 +1,62 @@
+crds:
+  # This option decides if the CRDs should be installed
+  # as part of the Helm installation.
+  enabled: true
+
+  # This option makes it so that the "helm.sh/resource-policy": keep
+  # annotation is added to the CRD. This will prevent Helm from uninstalling
+  # the CRD when the Helm release is uninstalled.
+  # WARNING: when the CRDs are removed, all cert-manager custom resources
+  # (Certificates, Issuers, ...) will be removed too by the garbage collector.
+  keep: true
+
+startupapicheck:
+  # Timeout for 'kubectl check api' command.
+  timeout: 5m
+
+prometheus:
+  # Enable Prometheus monitoring for the cert-manager controller and webhook.
+  # If you use the Prometheus Operator, set prometheus.podmonitor.enabled or
+  # prometheus.servicemonitor.enabled, to create a PodMonitor or a
+  # ServiceMonitor resource.
+  # Otherwise, 'prometheus.io' annotations are added to the cert-manager and
+  # cert-manager-webhook Deployments.
+  # Note that you can not enable both PodMonitor and ServiceMonitor as they are
+  # mutually exclusive. Enabling both will result in an error.
+  enabled: true
+
+  servicemonitor:
+    # Create a ServiceMonitor to add cert-manager to Prometheus.
+    enabled: true
+
+    # The namespace that the service monitor should live in, defaults
+    # to the cert-manager namespace.
+    # +docs:property
+    namespace: monitoring
+
+    # Specifies the `prometheus` label on the created ServiceMonitor. This is
+    # used when different Prometheus instances have label selectors matching
+    # different ServiceMonitors.
+    prometheusInstance: default
+
+    # The target port to set on the ServiceMonitor. This must match the port that the
+    # cert-manager controller is listening on for metrics.
+    targetPort: 9402
+
+    # The path to scrape for metrics.
+    path: /metrics
+
+    # The interval to scrape metrics.
+    interval: 60s
+
+    # The timeout before a metrics scrape fails.
+    scrapeTimeout: 30s
+
+    # Additional labels to add to the ServiceMonitor.
+    labels: {}
+
+    # Additional annotations to add to the ServiceMonitor.
+    annotations: {}
+
+    # Keep labels from scraped data, overriding server-side labels.
+    honorLabels: false
