@@ -1,0 +1,35 @@
+version: "2.4"
+services:
+  minio:
+    image: tobi312/minio:alpine-RELEASE.2024-09-22T00-33-43Z
+    container_name: minio
+    restart: unless-stopped
+    network_mode: host  # Use host network to access ZeroTier IP
+    volumes:
+      - ./minio-data:/data:rw
+    environment:
+      MINIO_ROOT_USER: maxitromer
+      MINIO_ROOT_PASSWORD: PgBqk4UE4h#C63@av2%6JAyp*28&l
+      MINIO_ADDRESS: ${ZEROTIER_IP}:9000  # Use ZeroTier IP
+      MINIO_CONSOLE_ADDRESS: ${ZEROTIER_IP}:9001  # Use ZeroTier IP
+    command: ["server", "/data"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://${ZEROTIER_IP}:9000/minio/health/live"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  zerotier:
+    image: zerotier/zerotier
+    container_name: zerotier
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volumes:
+      - ./zerotier-config:/var/lib/zerotier-one
+    environment:
+      - ZEROTIER_NETWORK=${ZEROTIER_NETWORK_ID}
