@@ -9,10 +9,150 @@ crds:
   # WARNING: when the CRDs are removed, all cert-manager custom resources
   # (Certificates, Issuers, ...) will be removed too by the garbage collector.
   keep: true
+# A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
+#
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: "no-arm32-enabled"
+              operator: "In"
+              values:
+                - "true"
+      - weight: 50
+        preference:
+          matchExpressions:
+            - key: "no-arm-enabled"
+              operator: "In"
+              values:
+                - "true"
+
+# A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+#
+
+tolerations:
+  - key: "no-arm32-enabled"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+  - key: "no-arm-enabled"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+
+webhook:
+
+  # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "no-arm32-enabled"
+                operator: "In"
+                values:
+                  - "true"
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: "no-arm-enabled"
+                operator: "In"
+                values:
+                  - "true"
+
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+  #
+
+  tolerations:
+    - key: "no-arm32-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+    - key: "no-arm-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+cainjector:
+
+  # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "no-arm32-enabled"
+                operator: "In"
+                values:
+                  - "true"
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: "no-arm-enabled"
+                operator: "In"
+                values:
+                  - "true"
+
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+  #
+
+  tolerations:
+    - key: "no-arm32-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+    - key: "no-arm-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+
 
 startupapicheck:
   # Timeout for 'kubectl check api' command.
   timeout: 5m
+
+  # A Kubernetes Affinity, if required. For more information, see [Affinity v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#affinity-v1-core).
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "no-arm32-enabled"
+                operator: "In"
+                values:
+                  - "true"
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: "no-arm-enabled"
+                operator: "In"
+                values:
+                  - "true"
+
+  # A list of Kubernetes Tolerations, if required. For more information, see [Toleration v1 core](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#toleration-v1-core).
+  #
+
+  tolerations:
+    - key: "no-arm32-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+    - key: "no-arm-enabled"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
 
 prometheus:
   # Enable Prometheus monitoring for the cert-manager controller and webhook.
