@@ -1,0 +1,138 @@
+# This example shows how to set MySQL server system variables.
+# The default and constant configuration values for mysqld are available on:
+# https://pkg.go.dev/github.com/cybozu-go/moco/pkg/mycnf#pkg-variables
+# The settings in ConstMycnf cannot be changed while the settings in DefaultMycnf can be overridden.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: databases
+  name: mycnf
+data:
+  # key-value in data field will become server system variable names and values.
+  # https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
+  # https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html
+  ## long_query_time: "2"
+  ## innodb_buffer_pool_size: "1G"
+
+  innodb_buffer_pool_size: "18G"
+
+  # Data consistency and flushing
+  innodb_flush_log_at_trx_commit: "1"   # Data consistency is critical
+  innodb_flush_method: "O_DIRECT"       # Reduces double buffering
+
+  # I/O capacity
+  innodb_io_capacity: "2000"            # Optimized for your disk performance
+  innodb_io_capacity_max: "4000"
+  innodb_read_io_threads: "8"
+  innodb_write_io_threads: "8"
+
+  # Storage and connections
+  innodb_file_per_table: "1"            # Separate tablespaces for each table
+  max_connections: "1000"               # High concurrency support
+  thread_cache_size: "256"              # Increased to reduce connection overhead
+
+  # Memory and temporary tables
+  tmp_table_size: "256M"
+  max_heap_table_size: "256M"
+
+  # Buffers for joins, sorts, and reads
+  join_buffer_size: "8M"                # Increased for better large join performance
+  sort_buffer_size: "8M"                # Increased for sorts
+  read_rnd_buffer_size: "4M"            # Larger sequential read buffer
+
+  # Cache and table definitions
+  table_open_cache: "10000"
+  table_definition_cache: "10000"
+
+  # Binary log and synchronization
+  sync_binlog: "1"                      # Improved performance; less strict logging
+  innodb_doublewrite: "1"               # Keep enabled for safety
+
+  # Buffer pool management
+  innodb_max_dirty_pages_pct: "40"      # Slightly more aggressive flushing
+  innodb_buffer_pool_dump_at_shutdown: "1"
+  innodb_buffer_pool_load_at_startup: "1"
+
+  # Replication and security
+  skip_replica_start: "1"
+  authentication_policy: "'*'"
+
+  # Redo log capacity
+  innodb_redo_log_capacity: "2G"
+
+
+---
+
+apiVersion: moco.cybozu.com/v1beta2
+kind: MySQLCluster
+metadata:
+  namespace: databases
+  name: mysql-cluster
+spec:
+  # replicas is the number of mysqld Pods.  The default is 1.
+  replicas: 3
+  # ConfigMap name in the same namespace.
+  mysqlConfigMapName: mycnf
+  collectors:
+  # collectors is a list of collector flag names used by mysqld_exporter and Prometheus.
+  # See https://github.com/prometheus/mysqld_exporter/blob/master/README.md#collector-flags for all available collectors.
+    - global_status
+    - global_variables
+    - slave_status
+    - slave_hosts
+    - info_schema.processlist
+    - perf_schema.eventsstatements
+    - perf_schema.replication_group_members
+    - perf_schema.replication_group_member_stats
+    - heartbeat
+    - info_schema.tablestats
+    - info_schema.innodb_metrics
+    - info_schema.innodb_tablespaces
+    - engine_innodb_status
+    - perf_schema.tableiowaits
+    - perf_schema.indexiowaits
+    - binlog_size
+
+  podTemplate:
+    spec:
+      # Make the data directory writable. If moco-init fails with "Permission denied", uncomment the following settings.
+      # securityContext:
+      #   fsGroup: 10000
+      #   fsGroupChangePolicy: "OnRootMismatch"  # available since k8s 1.20
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - mysql
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - mysql-cluster
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      # At least a container named "mysqld" must be defined.
+      - name: mysqld
+        image: ghcr.io/cybozu-go/moco/mysql:8.4.2
+        # By limiting CPU and memory, Pods will have Guaranteed QoS class.
+        # requests can be omitted; it will be set to the same value as limits.
+        resources:
+          requests:
+            cpu: "4"
+            memory: "6Gi"
+          limits:
+            cpu: "10"
+            memory: "24Gi"            
+  volumeClaimTemplates:
+  # At least a PVC named "mysql-data" must be defined.
+  - metadata:
+      name: mysql-data
+    spec:
+      storageClassName: raid-ssd-cached-local-path
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1024Gi
