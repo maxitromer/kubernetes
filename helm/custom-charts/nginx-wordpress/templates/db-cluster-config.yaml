@@ -124,27 +124,40 @@ data:
     // );
 
 
-    // This primary DB is the Master and works when bitpoke is enabled or disabled
+    // Primary database configuration
     $wpdb->add_database(array(
-        'host'     => getenv('WORDPRESS_DB_HOST'), // If port is other than 3306, use host:port.
+        'host'     => getenv('WORDPRESS_DB_HOST'),
         'user'     => getenv('WORDPRESS_DB_USER'),
         'password' => getenv('WORDPRESS_DB_PASSWORD'),
         'name'     => getenv('WORDPRESS_DB_NAME'),
         'write'    => 1,
-        // Reads are limited to the primary DB when bitpoke is enabled
-        {{- if $.Values.bitpokeDB.enabled }}
+        {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
         'read'     => 10,
-        {{- end }}
-        {{- if not $.Values.bitpokeDB.enabled }}
-        'read'     => 1,        
+        {{- else }}
+        'read'     => 1,
         {{- end }}
         'dataset'  => 'global',
         'timeout'  => 0.2,
     ));
-    // This replica DB is used only when bitpoke is enabled
-    {{- if $.Values.bitpokeDB.enabled }}
+
+    {{- if eq .Values.database.mode "externalWithReplication" }}
+    // Replica database configuration for external DB with replication
     $wpdb->add_database(array(
-        'host'     => '{{ .Values.bitpokeDB.clusterName }}-mysql-replicas.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306',
+        'host'     => '{{ .Values.database.externalWithReplication.replicaHost }}',
+        'user'     => getenv('WORDPRESS_DB_USER'),
+        'password' => getenv('WORDPRESS_DB_PASSWORD'),
+        'name'     => getenv('WORDPRESS_DB_NAME'),
+        'write'    => 0,
+        'read'     => 1,
+        'dataset'  => 'global',
+        'timeout'  => 0.2,
+    ));
+    {{- end }}
+
+    {{- if eq .Values.database.mode "bitpoke" }}
+    // Replica database configuration for Bitpoke DB
+    $wpdb->add_database(array(
+        'host'     => '{{ .Values.database.bitpoke.clusterName }}-mysql-replicas.{{ .Values.database.bitpoke.namespace }}.svc.cluster.local:3306',
         'user'     => getenv('WORDPRESS_DB_USER'),
         'password' => getenv('WORDPRESS_DB_PASSWORD'),
         'name'     => getenv('WORDPRESS_DB_NAME'),

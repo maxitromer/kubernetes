@@ -4,15 +4,18 @@ metadata:
   name: {{ $.Release.Name }}-wordpress-configmap
   namespace: {{ $.Release.Namespace }}
 data:
-  {{- if $.Values.bitpokeDB.enabled }}
-  WORDPRESS_DB_HOST: "{{ .Values.bitpokeDB.clusterName }}-mysql-master.{{ .Values.bitpokeDB.namespace }}.svc.cluster.local:3306"
+  {{- if eq .Values.database.mode "default" }}
+  WORDPRESS_DB_HOST: "{{ .Values.database.default.host }}"
+  WORDPRESS_DB_NAME: "{{ .Values.database.default.name }}"
+  WORDPRESS_DB_USER: "{{ .Values.database.default.user }}"
+  {{- else if eq .Values.database.mode "bitpoke" }}
+  WORDPRESS_DB_HOST: "{{ .Values.database.bitpoke.clusterName }}-mysql-master.{{ .Values.database.bitpoke.namespace }}.svc.cluster.local:3306"
   WORDPRESS_DB_NAME: "{{ $.Release.Name }}-db-name"
   WORDPRESS_DB_USER: "{{ $.Release.Name }}-username"
-  {{- end }}
-  {{- if not $.Values.bitpokeDB.enabled }}
-  WORDPRESS_DB_HOST: "{{ .Values.wordpress.database.host }}"
-  WORDPRESS_DB_NAME: "{{ .Values.wordpress.database.name }}"
-  WORDPRESS_DB_USER: "{{ .Values.wordpress.database.user }}"
+  {{- else if eq .Values.database.mode "externalWithReplication" }}
+  WORDPRESS_DB_HOST: "{{ .Values.database.externalWithReplication.primaryHost }}"
+  WORDPRESS_DB_NAME: "{{ .Values.database.externalWithReplication.dbName }}"
+  WORDPRESS_DB_USER: "{{ .Values.database.externalWithReplication.username }}"
   {{- end }}
   WORDPRESS_TABLE_PREFIX: {{ $.Release.Name }}
   {{- if $.Values.wordpress.customPHPini.enabled }}

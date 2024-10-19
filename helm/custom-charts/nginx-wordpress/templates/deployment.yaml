@@ -93,12 +93,12 @@ spec:
           persistentVolumeClaim:
             claimName: {{ $.Release.Name }}-wp-content-pvc
         {{- end }}
-        {{- if $.Values.bitpokeDB.enabled }}
+        {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
         - name: db-cluster-config
           configMap:
             name: {{ $.Release.Name }}-db-cluster-config
         {{- end }}
-      {{- if $.Values.bitpokeDB.enabled }}
+      {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
       initContainers:
         - name: init-wp-content
           image: {{ .Values.global.customImage }}
@@ -180,7 +180,7 @@ spec:
             # - name: var
             #   mountPath: /var
               {{- end }}
-            {{- if $.Values.bitpokeDB.enabled }}
+            {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
             - name: db-cluster-config
               mountPath: /var/www/html/db-config.php
               subPath: db-config.php
@@ -201,14 +201,19 @@ spec:
             - name: WORDPRESS_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  {{- if $.Values.bitpokeDB.enabled }}
+                  {{- if eq .Values.database.mode "default" }}
+                  name: {{ $.Release.Name }}-default-db-pass
+                  key: password
+                  {{- else if eq .Values.database.mode "bitpoke" }}
                   name: {{ $.Release.Name }}-bitpoke-db-pass
                   key: password
-                  {{- end }}
-                  {{- if not $.Values.bitpokeDB.enabled }}
-                  name: {{ $.Release.Name }}-db-pass
+                  {{- else if eq .Values.database.mode "externalWithReplication" }}
+                  #############################################3
+                  name: {{ $.Release.Name }}-external-replication-db-pass
+                  #################################################3q
                   key: password
                   {{- end }}
+
           resources:
             {{- if .Values.resources.enableLimits }}
             limits:

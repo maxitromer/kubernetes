@@ -1,18 +1,18 @@
-{{- if $.Values.bitpokeDB.enabled }}
+{{- if eq .Values.database.mode "bitpoke" }}
 apiVersion: mysql.presslabs.org/v1alpha1
 kind: MysqlUser
 metadata:
   name: {{ $.Release.Name }}-user
-  namespace: {{ .Values.bitpokeDB.namespace }}
+  namespace: {{ .Values.database.bitpoke.namespace }}
   annotations:
-    {{- if $.Values.bitpokeDB.keepOnUninstall }}
+    {{- if $.Values.database.bitpoke.keepOnUninstall }}
     helm.sh/resource-policy: keep
     {{- end }}
 spec:
   user: {{ $.Release.Name }}-username
   clusterRef:
-    name: {{ .Values.bitpokeDB.clusterName }}
-    namespace: {{ .Values.bitpokeDB.namespace }}
+    name: {{ .Values.database.bitpoke.clusterName }}
+    namespace: {{ .Values.database.bitpoke.namespace }}
   password:
     name: {{ $.Release.Name }}-bitpoke-db-pass
     key: password    

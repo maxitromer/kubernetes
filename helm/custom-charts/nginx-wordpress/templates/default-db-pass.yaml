@@ -2,13 +2,13 @@
 # echo -n '<your_password>' | base64
 
 ## Sets the Secret Password for the DB
-{{- if not $.Values.bitpokeDB.enabled }}
+{{- if eq .Values.database.mode "default" }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ $.Release.Name }}-db-pass
+  name: {{ $.Release.Name }}-default-db-pass
   namespace: {{ $.Release.Namespace }}
 type: Opaque
 data:
-  password: {{ .Values.wordpress.database.SecretPasswordKey }}
+  password: {{ .Values.database.default.SecretPasswordKey }}
 {{- end }}   

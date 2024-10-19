@@ -32,7 +32,7 @@
 global:
   customImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
   imagePullPolicy : IfNotPresent # Always
-  replicas: 1
+  replicas: 3
   # Autoscaling require resource requests to work, limits are optional but recommended
   autoscaling:
     enabled: false
@@ -61,8 +61,8 @@ domains:
   addWWW: true
   redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
   names:
-    -  t3.markitectos.com
-    -  t4.markitectos.com  
+    -  t5.markitectos.com
+  #  -  t4.markitectos.com  
 
 SSLcertificate:
   productionReady: false  # on false will use letsencrypt-staging
@@ -137,19 +137,35 @@ wordpress:
     # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
     size: 2Gi
     keepOnUninstall: false
-  database:
+
+database:
+  # Select which database configuration to use
+  # Options: "default", "bitpoke", "externalWithReplication"
+  mode: "externalWithReplication"
+  
+  # Default WordPress database settings
+  default:
     host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
     name: whoami_markitectos
     user: whoami_markitectos_user
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
     SecretPasswordKey: TWF4aTE0NjUh
 
-# This will disable the external database parameters
-bitpokeDB:
-  enabled: true
-  namespace: databases
-  clusterName: my-cluster
-  ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
-  secretPasswordKey: TWF4aTE0NjUh
-  keepOnUninstall: false
+  # Bitpoke settings
+  bitpoke:
+    namespace: databases
+    clusterName: my-cluster
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+    secretPasswordKey: TWF4aTE0NjUh
+    keepOnUninstall: false
 
+  # External DB with replication settings
+  externalWithReplication:
+    namespace: databases
+    clusterName: moco-test
+    primaryHost: moco-moco-test-primary.databases.svc.cluster.local:3306
+    replicaHost: moco-moco-test-replica.databases.svc.cluster.local:3306
+    dbName: t5_database
+    username: t5_user
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+    secretPasswordKey: aGRwZjlEVTJqNUpuMVcrOQ==

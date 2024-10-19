@@ -1,0 +1,25 @@
+## To create the password value in base 64 to set this secret
+# echo -n '<your_password>' | base64
+
+## Sets the Secret Password for the DB
+{{- if eq .Values.database.mode "externalWithReplication" }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $.Release.Name }}-external-replication-db-pass
+  namespace: {{ .Values.database.externalWithReplication.namespace }}
+type: Opaque
+data:
+  password: {{ .Values.database.externalWithReplication.secretPasswordKey }}
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $.Release.Name }}-external-replication-db-pass
+  namespace: {{ $.Release.Namespace }}
+type: Opaque
+data:
+  password: {{ .Values.database.externalWithReplication.secretPasswordKey }}
+{{- end }}   
