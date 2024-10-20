@@ -1,16 +1,6 @@
-# bucketName: markitectos-moco-mysql-cluster
-# bucketEndpoint: s3.us-east-005.backblazeb2.com
-# bucketRegion: us-east-005
-# keyID: 005ebe0f7010c550000000005
-# keyName: markitectos-moco-mysql-cluster-keyname
-# applicationKey: K0059ZcocWrr1e05T6z4lTNgLnkM93U
-
-# echo -n "005ebe0f7010c550000000005" | base64
-# echo -n "K0059ZcocWrr1e05T6z4lTNgLnkM93U" | base64
 
 # echo -n "<your-access-key-id>" | base64
 # echo -n "<your-application-key>" | base64
-
 
 
 apiVersion: v1
