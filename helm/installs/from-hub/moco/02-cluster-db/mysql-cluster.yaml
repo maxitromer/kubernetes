@@ -72,6 +72,7 @@ spec:
   # replicas is the number of mysqld Pods.  The default is 1.
   replicas: 3
   # ConfigMap name in the same namespace.
+  backupPolicyName: moco-daily
   mysqlConfigMapName: mycnf
   collectors:
   # collectors is a list of collector flag names used by mysqld_exporter and Prometheus.
@@ -81,17 +82,46 @@ spec:
     - slave_status
     - slave_hosts
     - info_schema.processlist
+    - info_schema.processlist.min_time=5
     - perf_schema.eventsstatements
+    - perf_schema.eventsstatements.digest_text_limit=120
+    - perf_schema.eventsstatements.limit=250
+    - perf_schema.eventsstatements.timelimit=300
     - perf_schema.replication_group_members
     - perf_schema.replication_group_member_stats
-    - heartbeat
+    - perf_schema.replication_applier_status_by_worker
+    # - heartbeat
     - info_schema.tablestats
-    - info_schema.innodb_metrics
-    - info_schema.innodb_tablespaces
+    - perf_schema.tablelocks
+    - perf_schema.file_events
+    - info_schema.userstats
+    - info_schema.tables
+    - info_schema.replica_host
+    - perf_schema.eventsstatementssum
     - engine_innodb_status
     - perf_schema.tableiowaits
     - perf_schema.indexiowaits
+    - perf_schema.eventswaits
     - binlog_size
+    - auto_increment.columns
+    - mysql.user
+    - sys.user_summary
+    - info_schema.innodb_metrics
+    - info_schema.innodb_tablespaces
+    - info_schema.innodb_cmp
+    - info_schema.innodb_cmpmem
+    - info_schema.clientstats
+    - info_schema.schemastats
+    - info_schema.query_response_time
+    - perf_schema.memory_events
+    - perf_schema.file_instances
+
+
+
+
+
+
+
 
   podTemplate:
     spec:
