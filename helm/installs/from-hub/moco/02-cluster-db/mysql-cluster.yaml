@@ -72,7 +72,7 @@ spec:
   # replicas is the number of mysqld Pods.  The default is 1.
   replicas: 3
   # ConfigMap name in the same namespace.
-  backupPolicyName: moco-daily
+  backupPolicyName: moco-backups
   mysqlConfigMapName: mycnf
   collectors:
   # collectors is a list of collector flag names used by mysqld_exporter and Prometheus.
