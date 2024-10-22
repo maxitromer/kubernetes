@@ -1,0 +1,134 @@
+image:
+  registry: docker.io
+  repository: bitnami/redis
+  tag: 7.4.1-debian-12-r0
+
+## @param architecture Valkey architecture. Allowed values: `standalone` or `replication`
+##
+architecture: replication
+
+auth:
+  enabled: true
+  sentinel: true
+  password: "rK#W4w&n4n2J^r9CWDT"
+
+master:
+  ## @param master.kind Use either Deployment, StatefulSet (default) or DaemonSet
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+  ##
+  kind: Deployment
+  ## @param master.updateStrategy.type Redis&reg; master statefulset strategy type
+  ## @skip master.updateStrategy.rollingUpdate
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ##
+  updateStrategy:
+    ## StrategyType
+    ## Can be set to RollingUpdate, OnDelete (statefulset), Recreate (deployment)
+    ##
+    type: RollingUpdate
+
+  persistence:
+    enabled: true
+    storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+  pdb:
+    create: true
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+  nodeSelector:
+    kubernetes.io/arch: amd64
+
+replica:
+  ## @param replica.kind Use either DaemonSet or StatefulSet (default)
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+  ##
+  kind: Deployment
+  persistence:
+    enabled: true
+    storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+  pdb:
+    create: true
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+  nodeSelector:
+    kubernetes.io/arch: amd64
+
+sentinel:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/redis-sentinel
+    tag: 7.4.1-debian-12-r0
+  masterSet: "mymaster"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+
+networkPolicy:
+  enabled: true
+  allowExternal: true
+
+metrics:
+  enabled: true
+  containerPorts:
+    http: 9121
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+  service:
+    enabled: true
+    type: ClusterIP
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+    metricsPath: /metrics
+    namespace: monitoring  # Change to your desired namespace
+    labels: 
+      app: redis  # Customize as needed
+  podMonitor:
+    enabled: true
+    namespace: monitoring  # Change to your desired namespace
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: 
+      app: redis  # Customize as needed
+  prometheusRule:
+    enabled: true
+    namespace: monitoring  # Change to your desired namespace
+    additionalLabels:
+      app: redis  # Customize as needed
+    rules:
+      - alert: RedisDown
+        expr: up{app="redis"} == 0  # Use a defined label instead
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis instance is down"
+          description: "Redis instance is down for more than 5 minutes."  # Removed the dynamic variable
