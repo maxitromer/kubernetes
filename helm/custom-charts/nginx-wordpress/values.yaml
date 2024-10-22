@@ -6,33 +6,10 @@
 
 # -- TODO --
 
-
-# -- DONE --
-
-# Add the posibility to include the nginx server to the wordpress container (install nginx in the wordpress container) to use less resourses
-# Add the user and database creation to the chart.
-# Add the option for production or staging certificates for lets encrypt
-# Include the bitpoke database and user creation
-# make posible to use users and password secrets from other namespaces
-# make posible to create namespaces for the wordpress instalations
-# Solve the SSL certificate creation / validation problem
-# When chart is uninstalled is important to keep the database, the user, and the grants.
-# When the chats is uninstalled is important to keep the PV and the PVC with all the data.
-# Add the posibility to select the type of container to use with nginx (the alpine with nginx intalled or the actual nginx container from docker but without the cache plugin)
-# Add the posibility to change the URLs that not are cached on de default conf of nginx. The idea here is to exclude all the carts and checkouts.
-# Add the psibility to split databases (read and write)
-# add the posibility to keep the SSL certificate
-# add the retail the PVC on deletion or uninstallation
-# Add the option to keep the lets encrypt certificates when uninstall
-# Add a nodeSelector to every pod in the deployment including los initContainers
-# Add nodeaffinity to ensure pods are scheduled on r7-11 first
-# Solve the www-redirect to domain problem
-
-
 global:
   customImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
   imagePullPolicy : IfNotPresent # Always
-  replicas: 3
+  replicas: 2
   # Autoscaling require resource requests to work, limits are optional but recommended
   autoscaling:
     enabled: false
@@ -162,10 +139,11 @@ database:
   # External DB with replication settings
   externalWithReplication:
     namespace: databases
-    clusterName: moco-test
-    primaryHost: moco-moco-test-primary.databases.svc.cluster.local:3306
-    replicaHost: moco-moco-test-replica.databases.svc.cluster.local:3306
+    clusterName: mysql-cluster
+    primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
+    replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
     dbName: t5_database
     username: t5_user
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
-    secretPasswordKey: aGRwZjlEVTJqNUpuMVcrOQ==
+    # actual password: SgYJf+NycEs9qV8x
+    secretPasswordKey: U2dZSmYrTnljRXM5cVY4eA==
