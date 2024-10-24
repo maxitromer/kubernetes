@@ -13,6 +13,8 @@ auth:
   password: "rK#W4w&n4n2J^r9CWDT"
 
 master:
+  extraFlags:
+    - "--maxmemory-policy allkeys-lru"
   persistence:
     enabled: true
     storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
@@ -33,6 +35,8 @@ master:
     kubernetes.io/arch: amd64
 
 replica:
+  extraFlags:
+    - "--maxmemory-policy allkeys-lru"
   persistence:
     enabled: true
     storageClass: "longhorn-hdd-1-replica"  # Replace with your actual storage class name
