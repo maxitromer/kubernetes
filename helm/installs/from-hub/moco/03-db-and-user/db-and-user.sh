@@ -1,14 +1,16 @@
 #!/bin/bash
 
 # Ask if user wants to use defaults values for cluster name and namespace
-read -p "Do you want to use the default namespace (databases) and cluster name (mysql-cluster)? (y/n): " USE_DEFAULT_CLUSTER
+read -p "Do you want to use the default namespace (databases) and cluster name (mysql-cluster)? [Y/n]: " USE_DEFAULT_CLUSTER
 
-if [[ $USE_DEFAULT_CLUSTER =~ ^[Yy]$ ]]; then
+if [[ -z "$USE_DEFAULT_CLUSTER" ]] || [[ $USE_DEFAULT_CLUSTER =~ ^[Yy]$ ]]; then
     NAMESPACE="databases"
     CLUSTER_NAME="mysql-cluster"
 else
+    read -p "Enter the namespace name: " NAMESPACE
     read -p "Enter the cluster name: " CLUSTER_NAME
 fi
+
 # Prompt for a unique value
 read -p "Enter a unique value for user and database names: " UNIQUE_VALUE
 
