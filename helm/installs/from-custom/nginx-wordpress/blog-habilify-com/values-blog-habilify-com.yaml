@@ -1,0 +1,143 @@
+
+global:
+  customImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
+  imagePullPolicy : IfNotPresent # Always
+  replicas: 1
+  # Autoscaling require resource requests to work, limits are optional but recommended
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilization: 70
+  preferToDistributePods: true
+  preferToRunOnAMD64: true
+  preferNodeR711thenR912: false
+  enableReadinessAndLivenessProbe: true
+
+
+resources:
+  enableLimits: true # false for unlimited resources
+  limits:
+    cpu: "2000m" # 0 for unlimited CPU
+    memory: "2048Mi" # 0 for unlimited RAM
+  enableRequests: true
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+
+ # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
+domains:
+  addWWW: true
+  redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
+  names:
+    -  blog.habilify.com 
+  #  -  t3.markitectos.com
+  #  -  t4.markitectos.com  
+
+SSLcertificate:
+  productionReady: true  # on false will use letsencrypt-staging
+  keepOnUninstall: true
+
+nginx:
+  customNginxConf:
+    enabled: true
+    clientMaxBodySizeMB: 100
+    # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
+    enableFastCGICache: true
+    cacheSizeMB: 100
+    removeInactiveItemsMinutes: 60
+    dontCacheURLs: 
+      - "/wp-admin/"
+      - "/wp-json/"
+      - "/xmlrpc.php"
+      - "wp-.*.php"
+      - "/feed/"
+      - "index.php"
+      - "sitemap(_index)?.xml"
+      - "/cart/"
+      - "/checkout/"
+      - "/my-account/"    
+    dontCacheCookies: 
+      - "wordpress_test_cookie"
+      - "comment_author_"
+      - "woocommerce_cart_hash"
+      - "woocommerce_items_in_cart"
+      - "wp_woocommerce_session_"
+      - "wordpress_[a-f0-9]+"
+      - "wp-postpass"
+      - "wordpress_no_cache"
+      - "wordpress_logged_in"    
+    enableBrowserCache: true
+  NginxHelper:
+    enablePath: true
+    enableLogs: true
+
+redis: 
+  enabled: true
+  debug: false
+  disableConnectionForTroubleshooting: false
+  analytics: true
+  sentinelHost: valkey.cache.svc.cluster.local
+  sentinelPort: 26379
+  service: mymaster
+  database: 1
+  password: "rK#W4w&n4n2J^r9CWDT"
+
+wordpress:
+  # will enable WP_DEBUG in wp-config.php for logs in the container logs
+  # debug: false
+  # enableErrorDisplay: false
+  https: true
+  DisableAutoUpdate: true
+  # this increase too much the time to start the pod
+  removePreintalledPluginsAndThemes: false 
+  enableMemcached: false
+  customPHPini:
+    enabled: true
+    uploadMaxFilesize: 100M
+    postMaxSize: 100M
+    memoryLimit: 256M
+    maxExecutionTime: 600
+    maxInputVars: 1000
+    maxInputTime: 400 
+  storage:
+    enabled: true
+    accessModes: ReadWriteMany
+    class: longhorn-raid-ssd-cached-3-replicas
+    # You only can increase this value, and if you do you will have to delete the pod for the resize take effect.
+    size: 3Gi
+    keepOnUninstall: true
+
+database:
+  # Select which database configuration to use
+  # Options: "default", "bitpoke", "externalWithReplication"
+  mode: "externalWithReplication"
+  
+  # Default WordPress database settings
+  # default:
+  #   host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
+  #   name: whoami_markitectos
+  #   user: whoami_markitectos_user
+  #   ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+  #   SecretPasswordKey: TWF4aTE0NjUh
+
+  # Bitpoke settings
+  # bitpoke:
+  #   namespace: databases
+  #   clusterName: my-cluster
+  #   ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+  #   secretPasswordKey: TWF4aTE0NjUh
+  #   keepOnUninstall: false
+
+  # External DB with replication settings
+  externalWithReplication:
+    namespace: databases
+    clusterName: mysql-cluster
+    primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
+    replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
+    dbName: blog_hability_com_database
+    username: blog_hability_com_user
+    secretPasswordKey: d0t0TGFvYk9TWDlKeFUxMQ==
+    # actual password: wKtLaobOSX9JxU11
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    
