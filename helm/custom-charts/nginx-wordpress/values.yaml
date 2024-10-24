@@ -9,7 +9,7 @@
 global:
   customImage: markitectos/production:custom_wp6.6.2-php8.3-fpm-alpine-v4
   imagePullPolicy : IfNotPresent # Always
-  replicas: 2
+  replicas: 1
   # Autoscaling require resource requests to work, limits are optional but recommended
   autoscaling:
     enabled: false
@@ -91,9 +91,9 @@ redis:
   password: "rK#W4w&n4n2J^r9CWDT"
 
 wordpress:
-  # will enable WP_DEBUG in wp-config.php for logs in the container logs
-  debug: true
-  enableErrorDisplay: true
+  # will enable WP_DEBUG in wp-config.php and logs in the container logs
+  debug: false
+  enableErrorDisplay: false
   https: true
   DisableAutoUpdate: true
   # this increase too much the time to start the pod

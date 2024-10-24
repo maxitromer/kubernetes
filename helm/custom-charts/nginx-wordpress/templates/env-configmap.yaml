@@ -40,30 +40,24 @@ data:
       define( 'RT_WP_NGINX_HELPER_CACHE_PATH','/var/www/html/wp-content/nginx-cache');      
       {{- end }}
       {{- if .Values.nginx.NginxHelper.enableLogs }}
-      define('NGINX_HELPER_LOG', true); // Enables the login feature for the Nginx Helper Plugin on "/var/www/html/wp-content/uploads/nginx-helper/nginx.log"
+      define('NGINX_HELPER_LOG', true); // Enables the log feature for the Nginx Helper Plugin on "/var/www/html/wp-content/uploads/nginx-helper/nginx.log"
       {{- end }}
-      {{- if .Values.wordpress.debug }}
+
+      define('WP_DEBUG', {{ $.Values.wordpress.debug }} );
+      define('WP_DEBUG_DISPLAY', {{ $.Values.wordpress.enableErrorDisplay }} );
+
+      {{- if $.Values.wordpress.debug }}
       // Error logging
-
-      define('WP_DEBUG', true);
       define('WP_DEBUG_LOG', '/dev/stderr'); // Error logs are sent to the container log output
-      {{- if .Values.wordpress.enableErrorDisplay }}
-      define( 'WP_DEBUG_DISPLAY', true );
-      {{- else}}
-      define( 'WP_DEBUG_DISPLAY', false );
+      @ini_set('log_errors', 'On');
+      @ini_set('error_log', 'php://stderr'); // Error logs are sent to the container log output
       {{- end }}
 
-      @ini_set( 'log_errors', 'On' );
+      {{- if not $.Values.wordpress.enableErrorDisplay }}
+      @ini_set('display_errors', 0 );
+      {{- end }} 
 
-      {{- if .Values.wordpress.enableErrorDisplay }}
-      @ini_set( 'display_errors', 'On' );
-      {{- else}}
-      @ini_set( 'display_errors', 'Off' );
-      {{- end }}
-      @ini_set( 'error_log', 'php://stderr' ); // Error logs are sent to the container log output
-      {{- end }}
-
-      {{- if .Values.redis.enabled }}
+      {{- if $.Values.redis.enabled }}
       define('WP_REDIS_CONFIG', [
           'token' => '123456789012345678901234567890123456789012345678901234567890',
           'password' => '{{ .Values.redis.password }}',
