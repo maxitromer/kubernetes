@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  namespace: habilify-com  # namespace where the PVC's exist
+  namespace: default  # namespace where the PVC's exist
   name: volume-migration
 spec:
   completions: 1
@@ -28,7 +28,7 @@ spec:
       volumes:
         - name: old-vol
           persistentVolumeClaim:
-            claimName: blog-hability-com-wp-content-pvc # change to data source PVC
+            claimName: clone2-t5-wp-content-pvc # change to data source PVC
         - name: new-vol
           persistentVolumeClaim:
-            claimName: blog-habilify-com-wp-content-pvc # change to data target PVC
+            claimName: clone3-t5-wp-content-pvc # change to data target PVC

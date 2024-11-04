@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-commander-service
+  namespace: cache
+spec:
+  selector:
+    app: redis-commander
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8081
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-commander
+  namespace: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-commander
+  template:
+    metadata:
+      labels:
+        app: redis-commander
+    spec:
+      containers:
+      - name: redis-commander
+        image: rediscommander/redis-commander:latest
+        ports:
+        - containerPort: 8081
+        # env:
+        # - name: SENTINEL_PORT
+        #   value: "26379"
+        # - name: SENTINEL_HOST
+        #   value: "valkey.cache.svc.cluster.local"
+        - name: SENTINEL_NAME
+          value: "mymaster"
+        - name: SENTINEL_PASSWORD
+          value: "rK#W4w&n4n2J^r9CWDT"
+        - name: SENTINELS
+          value: "valkey-node-0.valkey-headless.cache.svc.cluster.local:26379,valkey-node-1.valkey-headless.cache.svc.cluster.local:26379,valkey-node-2.valkey-headless.cache.svc.cluster.local:26379"
+
+---
+
+# apiVersion: ui.cattle.io/v1
+# kind: NavLink
+# metadata:
+#   name: redis-commander
+#   namespace: cache
+# spec:
+#   label: Redis Commander
+#   target: _blank
+#   toService:
+#     name: redis-commander
+#     namespace: cache
+#     path: /
+#     port: '80'
+#     scheme: http

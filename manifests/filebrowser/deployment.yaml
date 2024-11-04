@@ -1,0 +1,215 @@
+# https://medium.com/@ajeet_/file-browser-a-simple-and-efficient-tool-for-file-management-3d0e6cc05677
+
+# TODO
+
+# Change ingress for traefik
+# Add SSL Ceritificate using Cert-Manager
+# Add PVC using longhorn or local-storage with and SSD in an ARM Odroid ?
+# Limit deployment only on ARM ?
+# Check the if the ServiceAccount and the ClusterRoleBinding are needed or if it best to add a simple service for this deployment
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: filebrowser
+  labels:
+    name: filebrowser
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-pvc
+  namespace: filebrowser
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hdd-local-path
+  resources:
+    requests:
+      storage: 200Gi
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-db-pvc
+  namespace: filebrowser
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hdd-local-path
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: filebrowser
+  namespace: filebrowser
+spec:
+  type: ClusterIP
+  selector:
+    app: filebrowser
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebrowser-config
+  namespace: filebrowser
+data:
+  .filebrowser.json: |
+    {
+      "port": 80,
+      "baseURL": "",
+      "address": "",
+      "log": "stdout",
+      "database": "/database/database.db",
+      "root": "/srv"
+    }
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filebrowser
+  namespace: filebrowser
+  annotations:
+    app: filebrowser
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebrowser
+  template:
+    metadata:
+      labels:
+        app: filebrowser
+    spec: 
+      nodeSelector:
+        kubernetes.io/hostname: r7-11
+      containers:
+        - name: filebrowser
+          imagePullPolicy: Always
+          image: filebrowser/filebrowser:v2.31.2
+          resources:
+            requests:
+              memory: "512Mi" # Nuevo 128Mi
+              cpu: "500m" # Nuevo 100m
+              ephemeral-storage: "200M"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+              ephemeral-storage: "200M" 
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - mountPath: /srv
+              name: fb-data
+            - mountPath: /.filebrowser.json
+              name: fb-config
+              subPath: .filebrowser.json              
+            - mountPath: /database
+              name: fb-database
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: fb-data
+          persistentVolumeClaim:
+            claimName: filebrowser-pvc 
+        - name: fb-config
+          configMap:
+            name: filebrowser-config
+        - name: fb-database
+          persistentVolumeClaim:
+            claimName: filebrowser-db-pvc            
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: filebrowser-markitectos-certificate
+  namespace: filebrowser
+spec:
+  secretName: filebrowser-markitectos-ssl-secret
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  dnsNames:
+    - 'files.markitectos.com'
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: filebrowser-default-headers
+  namespace: filebrowser
+spec:
+  headers:
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 15552000
+    customFrameOptionsValue: SAMEORIGIN
+    customRequestHeaders:
+      X-Forwarded-Proto: https
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: filebrowser-ingress-route
+  namespace: filebrowser
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`files.markitectos.com`)
+      kind: Rule
+      services:
+        - name: filebrowser
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: filebrowser-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+      middlewares:
+        - name: filebrowser-default-headers
+  tls:
+    secretName: filebrowser-markitectos-ssl-secret
+
