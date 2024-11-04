@@ -114,27 +114,35 @@ wordpress:
     # You only can increase the value of the size and if you do you will have to delete the pod for the resize take effect.
     size: 2Gi
     keepOnUninstall: false
+  externalStorage:
+    # This will disable the internal storage and use the external one defined here
+    enabled: false
+    # The external PVC must be created manually before installing the chart
+    # The external PVC must be in the same namespace as the WordPress deployment
+    pvcName: clone3-t5-wp-content-pvc
+
 
 database:
   # Select which database configuration to use
   # Options: "default", "bitpoke", "externalWithReplication"
   mode: "externalWithReplication"
-  
+  # This will disable the table prefix created with the release name
+  customTablePrefix: customPrefix_
   # Default WordPress database settings
-  default:
-    host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
-    name: whoami_markitectos
-    user: whoami_markitectos_user
-    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
-    SecretPasswordKey: TWF4aTE0NjUh
+  # default:
+  #   host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
+  #   name: whoami_markitectos
+  #   user: whoami_markitectos_user
+  #   ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+  #   SecretPasswordKey: TWF4aTE0NjUh
 
-  # Bitpoke settings
-  bitpoke:
-    namespace: databases
-    clusterName: my-cluster
-    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
-    secretPasswordKey: TWF4aTE0NjUh
-    keepOnUninstall: false
+  # # Bitpoke settings
+  # bitpoke:
+  #   namespace: databases
+  #   clusterName: my-cluster
+  #   ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
+  #   secretPasswordKey: TWF4aTE0NjUh
+  #   keepOnUninstall: false
 
   # External DB with replication settings
   externalWithReplication:

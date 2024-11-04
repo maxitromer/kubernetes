@@ -23,8 +23,8 @@ UNIQUE_VALUE=$(echo "$UNIQUE_VALUE" | tr '-' '_')
 PASSWORD_IN_BASE64=$(echo -n "$PASSWORD" | base64)
 
 # Set variables using the sanitized unique value
-USER_NAME="${UNIQUE_VALUE}_user"
-DB_NAME="${UNIQUE_VALUE}_database"
+USER_NAME="${UNIQUE_VALUE:0:27}_user"
+DB_NAME="${UNIQUE_VALUE:0:29}_db"
 
 # Create user with the generated password
 kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "CREATE USER '$USER_NAME'@'%' IDENTIFIED BY '$PASSWORD'"

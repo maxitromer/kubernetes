@@ -5,13 +5,13 @@ global:
   replicas: 1
   # Autoscaling require resource requests to work, limits are optional but recommended
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
-  preferNodeR711thenR912: true
+  preferNodeR711thenR912: false
   enableReadinessAndLivenessProbe: false
 
 
@@ -31,12 +31,12 @@ domains:
   addWWW: true
   redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
   names:
-    -  aprendeapintarconoleo.com 
-    -  t3.markitectos.com
+    -  campus.habilify.com 
+  #  -  t3.markitectos.com
   #  -  t4.markitectos.com  
 
 SSLcertificate:
-  productionReady: false  # on false will use letsencrypt-staging
+  productionReady: true  # on false will use letsencrypt-staging
   keepOnUninstall: true
 
 nginx:
@@ -70,8 +70,8 @@ nginx:
       - "wordpress_logged_in"    
     enableBrowserCache: true
   NginxHelper:
-    enablePath: true
-    enableLogs: true
+    enablePath: false
+    enableLogs: false
 
 redis: 
   enabled: true
@@ -81,7 +81,7 @@ redis:
   sentinelHost: valkey.cache.svc.cluster.local
   sentinelPort: 26379
   service: mymaster
-  database: 3
+  database: 5
   password: "rK#W4w&n4n2J^r9CWDT"
 
 wordpress:
@@ -106,7 +106,7 @@ wordpress:
     accessModes: ReadWriteMany
     class: longhorn-raid-ssd-cached-3-replicas
     # You only can increase this value, and if you do you will have to delete the pod for the resize take effect.
-    size: 10Gi
+    size: 5Gi
     keepOnUninstall: true
 
 database:
@@ -136,8 +136,8 @@ database:
     clusterName: mysql-cluster
     primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
     replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
-    dbName: aprendeapintarconoleo_com_database
-    username: aprendeapintarconoleo_com_user
-    secretPasswordKey: cTRzamFaQk0vZERuWG1tUw== # base64 format
-    # actual password: q4sjaZBM/dDnXmmS
+    dbName: campus_habilify_com_db
+    username: campus_habilify_com_user
+    secretPasswordKey: N3VPVmlXL2hPZ21yMTJ4aQ== # base64 format
+    # actual password: 7uOViW/hOgmr12xi
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    

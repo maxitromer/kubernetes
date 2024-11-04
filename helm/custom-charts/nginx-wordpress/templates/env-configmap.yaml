@@ -17,7 +17,7 @@ data:
   WORDPRESS_DB_NAME: "{{ .Values.database.externalWithReplication.dbName }}"
   WORDPRESS_DB_USER: "{{ .Values.database.externalWithReplication.username }}"
   {{- end }}
-  WORDPRESS_TABLE_PREFIX: {{ $.Release.Name | replace "-" "_" | regexFind "[a-zA-Z0-9_]+" }}
+  WORDPRESS_TABLE_PREFIX: {{ $.Release.Name | substr 0 3 | lower | replace "-" "_" | regexFind "[a-zA-Z0-9_]+" }}_
   {{- if $.Values.wordpress.customPHPini.enabled }}
   PHP_INI_SCAN_DIR: :/usr/local/etc/php/conf.d/custom-conf
   {{- end }}

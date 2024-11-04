@@ -173,12 +173,10 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
-    retention: 60d
+    retention: 30d
+    retentionSize: "90GB"
     enableAdminAPI: true
     walCompression: true
-    ## Maximum size of metrics
-    ##
-    # retentionSize: ""
     scrapeInterval: 30s
     evaluationInterval: 30s
 
@@ -230,11 +228,11 @@ prometheus:
     ## Using PersistentVolumeClaim
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn-hdd-2-replicas
+          storageClassName: longhorn-hdd-1-replica # longhorn-hdd-2-replicas
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 30Gi
+              storage: 100Gi
     #   selector: {}
     # affinity:
     #   nodeAffinity:

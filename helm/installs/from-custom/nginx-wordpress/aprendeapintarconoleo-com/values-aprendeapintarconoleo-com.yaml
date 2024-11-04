@@ -11,18 +11,18 @@ global:
   preferToDistributePods: true
   preferToRunOnAMD64: true
   preferNodeR711thenR912: true
-  enableReadinessAndLivenessProbe: false
+  enableReadinessAndLivenessProbe: true
 
 
 resources:
   enableLimits: false # false for unlimited resources
   limits:
-    cpu: "2000m" # 0 for unlimited CPU
-    memory: "2048Mi" # 0 for unlimited RAM
+    cpu: "8000m" # 0 for unlimited CPU
+    memory: "8192Mi" # 0 for unlimited RAM
   enableRequests: true
   requests:
-    cpu: "500m"
-    memory: "512Mi"
+    cpu: "250m"
+    memory: "256Mi"
 
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
@@ -31,7 +31,7 @@ domains:
   redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
   names:
     -  aprendeapintarconoleo.com 
-  #   -  t3.markitectos.com
+  #  -  t3.markitectos.com
   #  -  t4.markitectos.com  
 
 SSLcertificate:
@@ -70,7 +70,7 @@ nginx:
     enableBrowserCache: true
   NginxHelper:
     enablePath: true
-    enableLogs: true
+    enableLogs: false
 
 redis: 
   enabled: true
@@ -135,8 +135,8 @@ database:
     clusterName: mysql-cluster
     primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
     replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
-    dbName: aprendeapintarconoleo_com_database
+    dbName: aprendeapintarconoleo_com_db
     username: aprendeapintarconoleo_com_user
-    secretPasswordKey: cTRzamFaQk0vZERuWG1tUw== # base64 format
-    # actual password: q4sjaZBM/dDnXmmS
+    secretPasswordKey: S3pUd3ppeXZuKzk3QkdLaw== # base64 format
+    # actual password: KzTwziyvn+97BGKk
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    

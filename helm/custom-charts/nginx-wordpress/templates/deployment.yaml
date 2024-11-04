@@ -88,10 +88,16 @@ spec:
           configMap:
             name: {{ $.Release.Name }}-wp-custom-php-ini
         {{- end }}
+        {{- if .Values.wordpress.externalStorage.enabled }}
+        - name: {{ $.Release.Name }}-wp-content-pv
+          persistentVolumeClaim:
+            claimName: {{ $.Values.wordpress.externalStorage.pvcName }}
+        {{- else }}
         {{- if .Values.wordpress.storage.enabled }}
         - name: {{ $.Release.Name }}-wp-content-pv
           persistentVolumeClaim:
             claimName: {{ $.Release.Name }}-wp-content-pvc
+        {{- end }}
         {{- end }}
         {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
         - name: db-cluster-config
@@ -190,7 +196,7 @@ spec:
               mountPath: /usr/local/etc/php/conf.d/custom-conf
               readOnly: true
             {{- end }}
-            {{- if .Values.wordpress.storage.enabled }}
+            {{- if or .Values.wordpress.storage.enabled .Values.wordpress.externalStorage.enabled }}
             - name: {{ $.Release.Name }}-wp-content-pv
               mountPath: /var/www/html/wp-content
             {{- end }}
