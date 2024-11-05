@@ -30,7 +30,7 @@ DB_NAME="${UNIQUE_VALUE:0:29}_db"
 kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "CREATE USER '$USER_NAME'@'%' IDENTIFIED BY '$PASSWORD'"
 
 # Create database
-kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "CREATE DATABASE $DB_NAME"
+kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "CREATE DATABASE $DB_NAME DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # Grant privileges
 kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "GRANT ALL ON $DB_NAME.* TO '$USER_NAME'@'%'"
