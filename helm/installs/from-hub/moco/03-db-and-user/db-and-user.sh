@@ -36,6 +36,7 @@ kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "CREAT
 kubectl moco -n "$NAMESPACE" mysql -u moco-writable "$CLUSTER_NAME" -- -e "GRANT ALL ON $DB_NAME.* TO '$USER_NAME'@'%'"
 
 # Display the generated user, database, and password
+echo "------- Generated Credentials -------"
 echo "dbName: $DB_NAME"
 echo "username: $USER_NAME"
 echo "secretPasswordKey: $PASSWORD_IN_BASE64 # base64 format"
