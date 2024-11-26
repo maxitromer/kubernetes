@@ -23,7 +23,7 @@ resources:
   enableRequests: true
   requests:
     cpu: "1000m"
-    memory: "512Mi"
+    memory: "768Mi"
 
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
@@ -31,8 +31,8 @@ domains:
   addWWW: true
   redirectWWWtoNonWWW: true # didn't work for subdomains, only for main domain, require addWWW: true
   names:
-    -  academy.oilpaintingsecrets.com 
-  #  -  t3.markitectos.com
+    -  xn--enseable-g3a.com 
+  #  -  ensenable.com
   #  -  t4.markitectos.com  
 
 SSLcertificate:
@@ -55,10 +55,9 @@ nginx:
       - "/feed/"
       - "index.php"
       - "sitemap(_index)?.xml"
-      - "/cart/"
-      - "/checkout/"
-      - "/my-account/"
-      - "/s/"    
+      - "/carrito/"
+      - "/acceso/"
+      - "/mi-cuenta/"   
     dontCacheCookies: 
       - "wordpress_test_cookie"
       - "comment_author_"
@@ -83,12 +82,12 @@ redis:
   sentinelHost: valkey.cache.svc.cluster.local
   sentinelPort: 26379
   service: mymaster
-  database: 7
+  database: 9
   password: "rK#W4w&n4n2J^r9CWDT"
 
 wordpress:
   # will enable WP_DEBUG in wp-config.php for logs in the container logs
-  # debug: false
+  debug: true
   # enableErrorDisplay: false
   https: true
   DisableAutoUpdate: true
@@ -96,14 +95,47 @@ wordpress:
   removePreintalledPluginsAndThemes: false 
   enableMemcached: false
   wpRocket: false
-  customPHPini:
-    enabled: true
-    uploadMaxFilesize: 100M
+  configSize: "large"  # Options: small, medium, large, extraLarge
+  # phpFpm:
+  #   postMaxSize: ~
+  #   uploadMaxFilesize: ~
+  #   maxInputVars: ~
+  #   maxInputTime: ~
+  #   outputBuffering: ~
+  #   pmMaxChildren: ~
+  #   pmStartServers: ~
+  #   pmMinSpareServers: ~
+  #   pmMaxSpareServers: ~
+  #   pmMaxRequests: ~
+  #   requestTerminateTimeout: ~
+  #   memoryLimit: ~
+  #   maxExecutionTime: ~
+  #   statusPath: ~
+  #   slowlog: ~
+  #   requestSlowlogTimeout: ~
+  phpIni:
     postMaxSize: 100M
-    memoryLimit: 768M
-    maxExecutionTime: 600
-    maxInputVars: 1000
-    maxInputTime: 400 
+    uploadMaxFilesize: 100M
+  #   realpathCacheSize: ~
+  #   realpathCacheTtl: ~
+  #   maxInputVars: ~
+  #   maxInputTime: ~
+  #   outputBuffering: ~
+  #   maxExecutionTime: ~
+  #   memoryLimit: ~
+  #   opcacheMemoryConsumption: ~
+  #   opcacheMaxAcceleratedFiles: ~
+  #   opcacheInternedStringsBuffer: ~
+  #   opcacheRevalidateFreq: ~
+
+  # customPHPini: # (will be deprecated)
+  #   enabled: ~ # true
+  #   uploadMaxFilesize: ~ # 100M
+  #   postMaxSize: ~ # 100M
+  #   memoryLimit: ~ # 256M
+  #   maxExecutionTime: ~ # 600
+  #   maxInputVars: ~ # 1000
+  #   maxInputTime: ~ # 400 
   storage:
     enabled: true
     accessModes: ReadWriteMany
@@ -116,7 +148,6 @@ database:
   # Select which database configuration to use
   # Options: "default", "bitpoke", "externalWithReplication"
   mode: "externalWithReplication"
-  # Set the table prefix
   tablePrefix: wp_
   # Default WordPress database settings
   # default:
@@ -140,8 +171,8 @@ database:
     clusterName: mysql-cluster
     primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
     replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
-    dbName: academy_oilpaintingsecrets_co_db
-    username: academy_oilpaintingsecrets__user
-    secretPasswordKey: OE51aVhGMlgxdVFvWjNJMQ== # base64 format
-    # actual password: 8NuiXF2X1uQoZ3I1
+    dbName: xn__enseable_g3a_com_db
+    username: xn__enseable_g3a_com_user
+    secretPasswordKey: WDlBamF0VHppckRUcUlwSA== # base64 format
+    # actual password: X9AjatTzirDTqIpH
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    
