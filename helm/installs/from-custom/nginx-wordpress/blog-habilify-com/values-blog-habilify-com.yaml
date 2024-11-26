@@ -23,7 +23,7 @@ resources:
   enableRequests: true
   requests:
     cpu: "100m"
-    memory: "128Mi"
+    memory: "180Mi" # "128Mi"
 
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
@@ -93,6 +93,7 @@ wordpress:
   # this increase too much the time to start the pod
   removePreintalledPluginsAndThemes: false 
   enableMemcached: false
+  wpRocket: false
   customPHPini:
     enabled: true
     uploadMaxFilesize: 100M
@@ -113,7 +114,8 @@ database:
   # Select which database configuration to use
   # Options: "default", "bitpoke", "externalWithReplication"
   mode: "externalWithReplication"
-  
+  # Set the table prefix
+  tablePrefix: blog_habilify_com 
   # Default WordPress database settings
   # default:
   #   host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306

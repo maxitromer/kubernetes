@@ -93,11 +93,12 @@ wordpress:
   # this increase too much the time to start the pod
   removePreintalledPluginsAndThemes: false 
   enableMemcached: false
+  wpRocket: false
   customPHPini:
     enabled: true
     uploadMaxFilesize: 100M
     postMaxSize: 100M
-    memoryLimit: 256M
+    memoryLimit: 512M
     maxExecutionTime: 600
     maxInputVars: 1000
     maxInputTime: 400 
@@ -113,7 +114,8 @@ database:
   # Select which database configuration to use
   # Options: "default", "bitpoke", "externalWithReplication"
   mode: "externalWithReplication"
-  
+  # Set the table prefix
+  tablePrefix: cam_ 
   # Default WordPress database settings
   # default:
   #   host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
