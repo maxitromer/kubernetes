@@ -1,0 +1,79 @@
+global:
+  domain:
+    names: 
+      - t5.markitectos.com
+
+# Traefik IngressRoute Configuration
+traefik:
+  ingressRoute:
+    enabled: true
+
+SSLCert:
+  enabled: true
+  productionReady: false  # on false will use letsencrypt-staging
+  keepOnUninstall: false
+
+
+mautic:
+  # Mautic container configurations
+  image:
+    repository: mautic/mautic
+    tag: 4.4.0
+    pullPolicy: IfNotPresent
+
+  # Different deployment types
+  web:
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 2Gi
+
+  cron:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  worker:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 300m
+        memory: 756Mi
+      limits:
+        cpu: 750m
+        memory: 1.5Gi
+
+  # Database Configuration
+  database:
+    type: mysql
+    host: mysql-cluster.database.svc.cluster.local
+    port: 3306
+    name: mautic
+    credentials:
+      secretName: mautic-db-credentials
+
+  # Redis Configuration for Sessions and Caching
+  # redis:
+  #   enabled: true
+  #   host: redis-cluster.cache.svc.cluster.local
+  #   port: 6379
+
+# Persistent Volumes Configuration with Longhorn
+persistence:
+  enabled: true
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteMany
+  size: 
+    web: 10Gi
+    data: 50Gi
+

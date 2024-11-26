@@ -1,0 +1,37 @@
+{{- if $.Values.ingressRoute.enabled }}
+{{- range $.Values.global.domain.names }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $.Release.Name }}-ingress-route-{{ . | replace "." "-" }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ . }}`)
+      kind: Rule
+      services:
+        - name: {{ $.Release.Name }}-mautic-web
+          port: 80
+          sticky:
+            cookie:
+              httpOnly: true
+              name: {{ . | replace "." "-" }}-sticky-cookie
+              secure: true
+              sameSite: none
+          strategy: RoundRobin
+      middlewares:
+        - name: {{ . | replace "." "-" }}-default-headers
+  tls:
+    secretName: {{ . | replace "." "-" }}-{{ if $.Values.SSLCert.productionReady }}prod{{ else }}staging{{ end }}-ssl-secret
+
+{{- end }}
+{{- end }}
+
+
+
+
+
+
+

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mautic-cron
+spec:
+  replicas: {{ .Values.mautic.cron.replicaCount }}
+  selector:
+    matchLabels:
+      app: mautic-cron
+  template:
+    metadata:
+      labels:
+        app: mautic-cron
+    spec:
+      containers:
+      - name: mautic-cron
+        image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+        command: ["/bin/sh", "-c", "cron && tail -f /dev/null"]
+        resources:
+          requests:
+            cpu: {{ .Values.mautic.cron.resources.requests.cpu }}
+            memory: {{ .Values.mautic.cron.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.mautic.cron.resources.limits.cpu }}
+            memory: {{ .Values.mautic.cron.resources.limits.memory }}
+        volumeMounts:
+        - name: mautic-cron-data
+          mountPath: /var/www/html

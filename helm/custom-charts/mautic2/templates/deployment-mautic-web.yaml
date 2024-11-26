@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mautic-web
+spec:
+  replicas: {{ .Values.mautic.web.replicaCount }}
+  selector:
+    matchLabels:
+      app: mautic-web
+  template:
+    metadata:
+      labels:
+        app: mautic-web
+    spec:
+      containers:
+      - name: mautic-web
+        image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: {{ .Values.mautic.web.resources.requests.cpu }}
+            memory: {{ .Values.mautic.web.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.mautic.web.resources.limits.cpu }}
+            memory: {{ .Values.mautic.web.resources.limits.memory }}
+        volumeMounts:
+        - name: mautic-web-data
+          mountPath: /var/www/html
+        env:
+        - name: MAUTIC_DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mautic.database.credentials.secretName }}
+              key: db-host
+        # Additional environment configurations...

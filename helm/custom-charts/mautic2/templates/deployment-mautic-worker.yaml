@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mautic-worker
+spec:
+  replicas: {{ .Values.mautic.worker.replicaCount }}
+  selector:
+    matchLabels:
+      app: mautic-worker
+  template:
+    metadata:
+      labels:
+        app: mautic-worker
+    spec:
+      containers:
+      - name: mautic-worker
+        image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+        command: ["/bin/sh", "-c", "worker-entrypoint.sh"]
+        resources:
+          requests:
+            cpu: {{ .Values.mautic.worker.resources.requests.cpu }}
+            memory: {{ .Values.mautic.worker.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.mautic.worker.resources.limits.cpu }}
+            memory: {{ .Values.mautic.worker.resources.limits.memory }}
+        volumeMounts:
+        - name: mautic-worker-data
+          mountPath: /var/www/html
