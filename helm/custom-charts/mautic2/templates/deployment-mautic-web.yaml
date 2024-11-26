@@ -6,12 +6,16 @@ spec:
   replicas: {{ .Values.mautic.web.replicaCount }}
   selector:
     matchLabels:
-      app: mautic-web
+      app: {{ .Release.Name }}-mautic-web
   template:
     metadata:
       labels:
-        app: mautic-web
+        app: {{ .Release.Name }}-mautic-web
     spec:
+      volumes:
+        - name: mautic-data-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-mautic-data-pvc
       containers:
       - name: mautic-web
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
@@ -25,12 +29,29 @@ spec:
             cpu: {{ .Values.mautic.web.resources.limits.cpu }}
             memory: {{ .Values.mautic.web.resources.limits.memory }}
         volumeMounts:
-        - name: mautic-web-data
-          mountPath: /var/www/html
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/config
+            subPath: config
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/var/logs
+            subPath: logs
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/media/files
+            subPath: media/files
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/media/images
+            subPath: media/images
+          - name: mautic-data-pvc
+            mountPath: /opt/mautic/cron
+            subPath: cron
+        envFrom:
+          - configMapRef:
+              name: {{ $.Release.Name }}-mautic-configmap          
         env:
-        - name: MAUTIC_DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.mautic.database.credentials.secretName }}
-              key: db-host
-        # Additional environment configurations...
+          # - name: DOCKER_MAUTIC_ROLE
+          #   value: mautic_web
+          - name: MAUTIC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Release.Name }}-db-pass
+                key: password

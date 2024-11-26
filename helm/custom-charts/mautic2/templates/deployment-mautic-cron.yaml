@@ -6,12 +6,16 @@ spec:
   replicas: {{ .Values.mautic.cron.replicaCount }}
   selector:
     matchLabels:
-      app: mautic-cron
+      app: {{ .Release.Name }}-mautic-cron
   template:
     metadata:
       labels:
-        app: mautic-cron
+        app: {{ .Release.Name }}-mautic-cron
     spec:
+      volumes:
+        - name: mautic-data-pvc
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-mautic-data-pvc
       containers:
       - name: mautic-cron
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
@@ -24,5 +28,29 @@ spec:
             cpu: {{ .Values.mautic.cron.resources.limits.cpu }}
             memory: {{ .Values.mautic.cron.resources.limits.memory }}
         volumeMounts:
-        - name: mautic-cron-data
-          mountPath: /var/www/html
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/config
+            subPath: config
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/var/logs
+            subPath: logs
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/media/files
+            subPath: media/files
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/media/images
+            subPath: media/images
+          - name: mautic-data-pvc
+            mountPath: /opt/mautic/cron
+            subPath: cron
+        envFrom:
+          - configMapRef:
+              name: {{ $.Release.Name }}-mautic-configmap          
+        env:
+          - name: DOCKER_MAUTIC_ROLE
+            value: mautic_cron
+          - name: MAUTIC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Release.Name }}-db-pass
+                key: password          

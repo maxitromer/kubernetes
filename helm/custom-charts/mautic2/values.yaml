@@ -18,7 +18,7 @@ mautic:
   # Mautic container configurations
   image:
     repository: mautic/mautic
-    tag: 4.4.0
+    tag: 5-apache
     pullPolicy: IfNotPresent
 
   # Different deployment types
@@ -52,15 +52,6 @@ mautic:
         cpu: 750m
         memory: 1.5Gi
 
-  # Database Configuration
-  database:
-    type: mysql
-    host: mysql-cluster.database.svc.cluster.local
-    port: 3306
-    name: mautic
-    credentials:
-      secretName: mautic-db-credentials
-
   # Redis Configuration for Sessions and Caching
   # redis:
   #   enabled: true
@@ -73,7 +64,16 @@ persistence:
   storageClassName: longhorn
   accessModes:
     - ReadWriteMany
-  size: 
-    web: 10Gi
-    data: 50Gi
+  size: 10Gi
 
+database:
+  namespace: databases
+  clusterName: mysql-cluster
+  primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local
+  primaryPort: 3306
+  replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local
+  replicaPort: 3306
+  dbName: t5_database
+  username: t5_user
+  secretPasswordKey: U2dZSmYrTnljRXM5cVY4eA==
+  # actual password: SgYJf+NycEs9qVix
