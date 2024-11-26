@@ -7,10 +7,8 @@ data:
   MAUTIC_DB_PORT: "{{ .Values.database.primaryPort }}"
   MAUTIC_DB_DATABASE: "{{ .Values.database.dbName }}"
   MAUTIC_DB_USER: "{{ .Values.database.username }}"
-  # MAUTIC_DB_PASSWORD: "{{ .Values.database.XXXXXX }}"
-
 
   MAUTIC_MESSENGER_DSN_EMAIL: "doctrine://default"
   MAUTIC_MESSENGER_DSN_HIT: "doctrine://default"
-  DOCKER_MAUTIC_RUN_MIGRATIONS: false
-  DOCKER_MAUTIC_LOAD_TEST_DATA: false
+  DOCKER_MAUTIC_RUN_MIGRATIONS: "false"
+  DOCKER_MAUTIC_LOAD_TEST_DATA: "false"

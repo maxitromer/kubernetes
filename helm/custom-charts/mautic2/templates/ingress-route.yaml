@@ -1,4 +1,4 @@
-{{- if $.Values.ingressRoute.enabled }}
+{{- if $.Values.traefik.ingressRoute.enabled }}
 {{- range $.Values.global.domain.names }}
 ---
 apiVersion: traefik.io/v1alpha1

@@ -18,12 +18,12 @@ mautic:
   # Mautic container configurations
   image:
     repository: mautic/mautic
-    tag: 5-apache
+    tag: 5.1.1-apache
     pullPolicy: IfNotPresent
 
   # Different deployment types
   web:
-    replicaCount: 2
+    replicaCount: 1
     resources:
       requests:
         cpu: 500m
@@ -43,7 +43,7 @@ mautic:
         memory: 1Gi
 
   worker:
-    replicaCount: 3
+    replicaCount: 1
     resources:
       requests:
         cpu: 300m
@@ -62,9 +62,9 @@ mautic:
 persistence:
   enabled: true
   storageClassName: longhorn
-  accessModes:
-    - ReadWriteMany
-  size: 10Gi
+  accessModes: ReadWriteMany
+  size: 2Gi
+  keepOnUninstall: false
 
 database:
   namespace: databases
@@ -73,7 +73,7 @@ database:
   primaryPort: 3306
   replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local
   replicaPort: 3306
-  dbName: t5_database
-  username: t5_user
-  secretPasswordKey: U2dZSmYrTnljRXM5cVY4eA==
-  # actual password: SgYJf+NycEs9qVix
+  dbName: mautic_t5_db
+  username: mautic_t5_user
+  secretPasswordKey: RFJpUFNWdTVXSFdpYVdoTQ== # base64 format
+  # actual password: DRiPSVu5WHWiaWhM
