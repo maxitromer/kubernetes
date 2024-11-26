@@ -17,11 +17,13 @@ data:
   WORDPRESS_DB_NAME: "{{ .Values.database.externalWithReplication.dbName }}"
   WORDPRESS_DB_USER: "{{ .Values.database.externalWithReplication.username }}"
   {{- end }}
-  WORDPRESS_TABLE_PREFIX: {{ $.Release.Name | substr 0 3 | lower | replace "-" "_" | regexFind "[a-zA-Z0-9_]+" }}_
+  WORDPRESS_TABLE_PREFIX: {{ .Values.database.tablePrefix }} # {{ $.Release.Name | substr 0 3 | lower | replace "-" "_" | regexFind "[a-zA-Z0-9_]+" }}_
   {{- if $.Values.wordpress.customPHPini.enabled }}
   PHP_INI_SCAN_DIR: :/usr/local/etc/php/conf.d/custom-conf
   {{- end }}
+  {{- if $.Values.wordpress.debug }}
   WORDPRESS_DEBUG: '{{ .Values.wordpress.debug }}' # defaults to disabled, non-empty value will enable WP_DEBUG in wp-config.php
+  {{- end }}
   WORDPRESS_CONFIG_EXTRA: |
       {{- if .Values.wordpress.https }}
       define( 'WP_HOME', 'https://' . $_SERVER['HTTP_HOST'] . '/' );
@@ -42,11 +44,9 @@ data:
       {{- if .Values.nginx.NginxHelper.enableLogs }}
       define('NGINX_HELPER_LOG', true); // Enables the log feature for the Nginx Helper Plugin on "/var/www/html/wp-content/uploads/nginx-helper/nginx.log"
       {{- end }}
-
-      define('WP_DEBUG', {{ $.Values.wordpress.debug }} );
-      define('WP_DEBUG_DISPLAY', {{ $.Values.wordpress.enableErrorDisplay }} );
-
       {{- if $.Values.wordpress.debug }}
+      // define('WP_DEBUG', {{ $.Values.wordpress.debug }} );
+      define('WP_DEBUG_DISPLAY', {{ $.Values.wordpress.enableErrorDisplay }} );
       // Error logging
       define('WP_DEBUG_LOG', '/dev/stderr'); // Error logs are sent to the container log output
       @ini_set('log_errors', 'On');

@@ -30,7 +30,7 @@ metadata:
   name: moco-backups
 spec:
   # Backup schedule.  Any CRON format is allowed.
-  schedule: "0 3 * * 1"
+  schedule: "0 3 * * 1" # Every monday at 3am
 
   jobConfig:
     # An existing ServiceAccount name is required.
