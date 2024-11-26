@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-php-fpm-config
+  namespace: {{ $.Release.Namespace }}
+data:
+  zzz-custom.conf: |
+
+    [www]
+    ; Common Configurations
+    pm.process_idle_timeout = 10s
+    catch_workers_output = yes
+    pm = dynamic
+
+    php_admin_value[post_max_size] = {{ .Values.wordpress.phpFpm.postMaxSize | default "50M" }}
+    php_admin_value[upload_max_filesize] = {{ .Values.wordpress.phpFpm.uploadMaxFilesize | default "50M" }}
+
+    ; Core Settings
+    php_admin_value[max_input_vars] = {{ .Values.wordpress.phpFpm.maxInputVars | default 10000 }}
+    php_admin_value[max_input_time] = {{ .Values.wordpress.phpFpm.maxInputTime | default 300 }}
+    php_admin_value[output_buffering] = {{ .Values.wordpress.phpFpm.outputBuffering | default 32768 }}
+
+    ; High-Level Configurations Based on wordpress.configSize
+    {{- if eq .Values.wordpress.configSize "small" }}
+    pm.max_children = {{ .Values.wordpress.phpFpm.pmMaxChildren | default 20 }}
+    pm.start_servers = {{ .Values.wordpress.phpFpm.pmStartServers | default 3 }}
+    pm.min_spare_servers = {{ .Values.wordpress.phpFpm.pmMinSpareServers | default 2 }}
+    pm.max_spare_servers = {{ .Values.wordpress.phpFpm.pmMaxSpareServers | default 5 }}
+    pm.max_requests = {{ .Values.wordpress.phpFpm.pmMaxRequests | default 500 }}
+    request_terminate_timeout = {{ .Values.wordpress.phpFpm.requestTerminateTimeout | default 120 }}
+    php_admin_value[memory_limit] = {{ .Values.wordpress.phpFpm.memoryLimit | default "256M" }}
+    php_admin_value[max_execution_time] = {{ .Values.wordpress.phpFpm.maxExecutionTime | default 240 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "medium" }}
+    pm.max_children = {{ .Values.wordpress.phpFpm.pmMaxChildren | default 25 }}
+    pm.start_servers = {{ .Values.wordpress.phpFpm.pmStartServers | default 5 }}
+    pm.min_spare_servers = {{ .Values.wordpress.phpFpm.pmMinSpareServers | default 5 }}
+    pm.max_spare_servers = {{ .Values.wordpress.phpFpm.pmMaxSpareServers | default 10 }}
+    pm.max_requests = {{ .Values.wordpress.phpFpm.pmMaxRequests | default 750 }}
+    request_terminate_timeout = {{ .Values.wordpress.phpFpm.requestTerminateTimeout | default 180 }}
+    php_admin_value[memory_limit] = {{ .Values.wordpress.phpFpm.memoryLimit | default "384M" }}
+    php_admin_value[max_execution_time] = {{ .Values.wordpress.phpFpm.maxExecutionTime | default 300 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "large" }}
+    pm.max_children = {{ .Values.wordpress.phpFpm.pmMaxChildren | default 100 }}
+    pm.start_servers = {{ .Values.wordpress.phpFpm.pmStartServers | default 15 }}
+    pm.min_spare_servers = {{ .Values.wordpress.phpFpm.pmMinSpareServers | default 10 }}
+    pm.max_spare_servers = {{ .Values.wordpress.phpFpm.pmMaxSpareServers | default 25 }}
+    pm.max_requests = {{ .Values.wordpress.phpFpm.pmMaxRequests | default 1000 }}
+    request_terminate_timeout = {{ .Values.wordpress.phpFpm.requestTerminateTimeout | default 240 }}
+    php_admin_value[memory_limit] = {{ .Values.wordpress.phpFpm.memoryLimit | default "512M" }}
+    php_admin_value[max_execution_time] = {{ .Values.wordpress.phpFpm.maxExecutionTime | default 360 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "extraLarge" }}
+    pm.max_children = {{ .Values.wordpress.phpFpm.pmMaxChildren | default 200 }}
+    pm.start_servers = {{ .Values.wordpress.phpFpm.pmStartServers | default 20 }}
+    pm.min_spare_servers = {{ .Values.wordpress.phpFpm.pmMinSpareServers | default 20 }}
+    pm.max_spare_servers = {{ .Values.wordpress.phpFpm.pmMaxSpareServers | default 50 }}
+    pm.max_requests = {{ .Values.wordpress.phpFpm.pmMaxRequests | default 1000 }}
+    request_terminate_timeout = {{ .Values.wordpress.phpFpm.requestTerminateTimeout | default 300 }}
+    php_admin_value[memory_limit] = {{ .Values.wordpress.phpFpm.memoryLimit | default "1024M" }}
+    php_admin_value[max_execution_time] = {{ .Values.wordpress.phpFpm.maxExecutionTime | default 420 }}
+    {{- end }}
+
+    ; Monitoring Settings
+    {{- if $.Values.wordpress.debug }}
+    pm.status_path = {{ .Values.wordpress.phpFpm.statusPath | default "/status" }}
+    slowlog = {{ .Values.wordpress.phpFpm.slowlog | default "/dev/stderr" }}
+    request_slowlog_timeout = {{ .Values.wordpress.phpFpm.requestSlowlogTimeout | default "5s" }}
+    php_admin_flag[log_errors] = on
+    php_admin_value[error_log] = /dev/stderr
+    {{- end }}

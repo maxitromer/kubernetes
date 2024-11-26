@@ -83,11 +83,9 @@ spec:
         # - name: var
         #   emptyDir: {}                              
         {{- end }}
-        {{- if $.Values.wordpress.customPHPini.enabled }}
         - name: {{ $.Release.Name }}-wp-custom-php-ini
           configMap:
             name: {{ $.Release.Name }}-wp-custom-php-ini
-        {{- end }}
         {{- if .Values.wordpress.externalStorage.enabled }}
         - name: {{ $.Release.Name }}-wp-content-pv
           persistentVolumeClaim:
@@ -104,6 +102,9 @@ spec:
           configMap:
             name: {{ $.Release.Name }}-db-cluster-config
         {{- end }}
+        - name: php-fpm-config
+          configMap:
+            name: {{ $.Release.Name }}-php-fpm-config
       {{- if or (eq .Values.database.mode "bitpoke") (eq .Values.database.mode "externalWithReplication") }}
       initContainers:
         - name: init-wp-content
@@ -146,6 +147,10 @@ spec:
           # securityContext:
           #   runAsUser: 82
           #   runAsGroup: 82
+          securityContext:
+            capabilities:
+              add:
+              - SYS_PTRACE
           ports:
             - containerPort: 80
             - containerPort: 9000
@@ -191,11 +196,13 @@ spec:
               mountPath: /var/www/html/db-config.php
               subPath: db-config.php
             {{- end }}  
-            {{- if $.Values.wordpress.customPHPini.enabled }}
             - name: {{ $.Release.Name }}-wp-custom-php-ini
               mountPath: /usr/local/etc/php/conf.d/custom-conf
               readOnly: true
-            {{- end }}
+            - name: php-fpm-config
+              mountPath: /usr/local/etc/php-fpm.d/zzz-custom.conf
+              subPath: zzz-custom.conf
+
             {{- if or .Values.wordpress.storage.enabled .Values.wordpress.externalStorage.enabled }}
             - name: {{ $.Release.Name }}-wp-content-pv
               mountPath: /var/www/html/wp-content

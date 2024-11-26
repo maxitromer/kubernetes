@@ -1,4 +1,3 @@
-{{- if $.Values.wordpress.customPHPini.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,15 +5,88 @@ metadata:
   namespace: {{ $.Release.Namespace }}
 data:
   custom-php.ini: |+
-    upload_max_filesize = {{ .Values.wordpress.customPHPini.uploadMaxFilesize }}
-    post_max_size = {{ .Values.wordpress.customPHPini.postMaxSize }}
-    memory_limit = {{ .Values.wordpress.customPHPini.memoryLimit }}
-    max_execution_time = {{ .Values.wordpress.customPHPini.maxExecutionTime }}
-    max_input_vars = {{ .Values.wordpress.customPHPini.maxInputVars }}
-    max_input_time = {{ .Values.wordpress.customPHPini.maxInputTime }}
+
+    ; PHP Configuration for WordPress
+
+    ; Common Settings
+    post_max_size = {{ .Values.wordpress.phpIni.postMaxSize | default .Values.wordpress.customPHPini.postMaxSize | default "50M"}}
+    upload_max_filesize = {{ .Values.wordpress.phpIni.uploadMaxFilesize | default .Values.wordpress.customPHPini.uploadMaxFilesize | default "50M" }}
+
+    ; OpCache Enhanced Settings
+    opcache.enable = 1
+    opcache.validate_timestamps = 1
+    opcache.fast_shutdown = 1
+    opcache.jit = 1255
+    opcache.jit_buffer_size = 64M
+    opcache.preload = /var/www/html/wp-includes/load.php
+    opcache.preload_user = www-data
+    opcache.file_cache = /tmp/opcache
+    opcache.file_cache_consistency_checks = 1
+    opcache.enable_file_override = 1
+    opcache.optimization_level = 0xFFFFFFFF
+
+    ; Realpath Cache Optimization
+    realpath_cache_size = {{ .Values.wordpress.phpIni.realpathCacheSize | default .Values.wordpress.customPHPini.realpathCacheSize | default "16384k" }}
+    realpath_cache_ttl = {{ .Values.wordpress.phpIni.realpathCacheTtl | default .Values.wordpress.customPHPini.realpathCacheTtl | default 14400 }}
+
+    ; Core Settings
+    max_input_vars = {{ .Values.wordpress.phpIni.maxInputVars | default .Values.wordpress.customPHPini.maxInputVars | default 10000 }}
+    max_input_time = {{ .Values.wordpress.phpIni.maxInputTime | default .Values.wordpress.customPHPini.maxInputTime | default 300 }}
+    output_buffering = {{ .Values.wordpress.phpIni.outputBuffering | default .Values.wordpress.customPHPini.outputBuffering | default 32768 }}
+    
+    ; Network & Compression
+    zlib.output_compression = On
+    zlib.output_compression_level = 6
+    default_socket_timeout = 120
+    
+    ; Upload Settings
+    upload_tmp_dir = /tmp
+    session.upload_progress.enabled = 1
+    session.upload_progress.cleanup = 1
+
+    ; High-Level Configurations Based on wordpress.configSize
+    {{- if eq .Values.wordpress.configSize "small" }}
+    ; Small WordPress Install
+    max_execution_time = {{ .Values.wordpress.phpIni.maxExecutionTime | default .Values.wordpress.customPHPini.maxExecutionTime | default 240 }}
+    memory_limit = {{ .Values.wordpress.phpIni.memoryLimit | default .Values.wordpress.customPHPini.memoryLimit | default "256M" }}
+    opcache.memory_consumption = {{ .Values.wordpress.phpIni.opcacheMemoryConsumption | default 192 }}
+    opcache.max_accelerated_files = {{ .Values.wordpress.phpIni.opcacheMaxAcceleratedFiles | default 10000 }}
+    opcache.interned_strings_buffer = {{ .Values.wordpress.phpIni.opcacheInternedStringsBuffer | default 32 }}
+    opcache.revalidate_freq = {{ .Values.wordpress.phpIni.opcacheRevalidateFreq | default 7200 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "medium" }}
+    ; Medium WordPress Install
+    max_execution_time = {{ .Values.wordpress.phpIni.maxExecutionTime | default .Values.wordpress.customPHPini.maxExecutionTime | default 300 }}
+    memory_limit = {{ .Values.wordpress.phpIni.memoryLimit | default .Values.wordpress.customPHPini.memoryLimit | default "384M" }}
+    opcache.memory_consumption = {{ .Values.wordpress.phpIni.opcacheMemoryConsumption | default 320 }}
+    opcache.max_accelerated_files = {{ .Values.wordpress.phpIni.opcacheMaxAcceleratedFiles | default 20000 }}
+    opcache.interned_strings_buffer = {{ .Values.wordpress.phpIni.opcacheInternedStringsBuffer | default 64 }}
+    opcache.revalidate_freq = {{ .Values.wordpress.phpIni.opcacheRevalidateFreq | default 7200 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "large" }}
+    ; Large WordPress Install
+    max_execution_time = {{ .Values.wordpress.phpIni.maxExecutionTime | default .Values.wordpress.customPHPini.maxExecutionTime | default 360 }}
+    memory_limit = {{ .Values.wordpress.phpIni.memoryLimit | default .Values.wordpress.customPHPini.memoryLimit | default "512M" }}
+    opcache.memory_consumption = {{ .Values.wordpress.phpIni.opcacheMemoryConsumption | default 448 }}
+    opcache.max_accelerated_files = {{ .Values.wordpress.phpIni.opcacheMaxAcceleratedFiles | default 30000 }}
+    opcache.interned_strings_buffer = {{ .Values.wordpress.phpIni.opcacheInternedStringsBuffer | default 96 }}
+    opcache.revalidate_freq = {{ .Values.wordpress.phpIni.opcacheRevalidateFreq | default 7200 }}
+    {{- end }}
+
+    {{- if eq .Values.wordpress.configSize "extraLarge" }}
+    ; Extra Large WordPress Install
+    max_execution_time = {{ .Values.wordpress.phpIni.maxExecutionTime | default .Values.wordpress.customPHPini.maxExecutionTime | default 420 }}
+    memory_limit = {{ .Values.wordpress.phpIni.memoryLimit | default .Values.wordpress.customPHPini.memoryLimit | default "1024M" }}
+    opcache.memory_consumption = {{ .Values.wordpress.phpIni.opcacheMemoryConsumption | default 640 }}
+    opcache.max_accelerated_files = {{ .Values.wordpress.phpIni.opcacheMaxAcceleratedFiles | default 40000 }}
+    opcache.interned_strings_buffer = {{ .Values.wordpress.phpIni.opcacheInternedStringsBuffer | default 128 }}
+    opcache.revalidate_freq = {{ .Values.wordpress.phpIni.opcacheRevalidateFreq | default 7200 }}
+    {{- end }}
+
     {{- if $.Values.wordpress.enableMemcached }}
     extension=memcached.so
-    ;extension=memcache.so
     memcache.allow_failover = 1
     memcache.max_failover_attempts = 20
     memcache.chunk_size = 32768
@@ -22,4 +94,13 @@ data:
     memcache.hash_strategy = standard
     memcache.hash_function = crc32
     {{- end }}  
-{{- end }}    
+
+    ; Logs Settings
+    {{- if $.Values.wordpress.debug }}   
+    log_errors = On
+    error_log = /dev/stderr
+    {{- end }}
+
+    {{- if $.Values.wordpress.enableErrorDisplay }}
+    display_errors = On
+    {{- end }}

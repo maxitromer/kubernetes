@@ -18,19 +18,19 @@ global:
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
-  preferNodeR711thenR912: true
+  preferNodeR711thenR912: false
   enableReadinessAndLivenessProbe: false
 
 
 resources:
-  enableLimits: false # false for unlimited resources
+  enableLimits: true # false for unlimited resources
   limits:
     cpu: "2000m" # 0 for unlimited CPU
     memory: "2048Mi" # 0 for unlimited RAM
   enableRequests: true
   requests:
-    cpu: "1000m"
-    memory: "1024Mi"
+    cpu: "500m"
+    memory: "256Mi"
 
 
  # The fastCGI cache only works on the original domain, the configured in general tab, in wordpress. Needs the Nginx Helper plugin to be installed.
@@ -99,14 +99,49 @@ wordpress:
   # this increase too much the time to start the pod
   removePreintalledPluginsAndThemes: false 
   enableMemcached: false
-  customPHPini:
-    enabled: true
-    uploadMaxFilesize: 100M
-    postMaxSize: 100M
-    memoryLimit: 256M
-    maxExecutionTime: 600
-    maxInputVars: 1000
-    maxInputTime: 400 
+  wpRocket: false
+  configSize: "medium"  # Options: small, medium, large, extraLarge
+  phpFpm:
+    postMaxSize: ~
+    uploadMaxFilesize: ~
+    maxInputVars: ~
+    maxInputTime: ~
+    outputBuffering: ~
+    pmMaxChildren: ~
+    pmStartServers: ~
+    pmMinSpareServers: ~
+    pmMaxSpareServers: ~
+    pmMaxRequests: 0
+    requestTerminateTimeout: 0
+    memoryLimit: ~
+    maxExecutionTime: ~
+    statusPath: ~
+    slowlog: ~
+    requestSlowlogTimeout: 0
+  phpIni:
+    postMaxSize: ~
+    uploadMaxFilesize: ~
+    realpathCacheSize: ~
+    realpathCacheTtl: ~
+    maxInputVars: ~
+    maxInputTime: ~
+    outputBuffering: ~
+    maxExecutionTime: ~
+    memoryLimit: ~
+    opcacheMemoryConsumption: ~
+    opcacheMaxAcceleratedFiles: ~
+    opcacheInternedStringsBuffer: ~
+    opcacheRevalidateFreq: ~
+
+  customPHPini: # (will be deprecated)
+    enabled: ~ # true
+    uploadMaxFilesize: ~ # 100M
+    postMaxSize: ~ # 100M
+    memoryLimit: ~ # 256M
+    maxExecutionTime: ~ # 600
+    maxInputVars: ~ # 1000
+    maxInputTime: ~ # 400 
+
   storage:
     enabled: true
     accessModes: ReadWriteMany
@@ -115,11 +150,11 @@ wordpress:
     size: 2Gi
     keepOnUninstall: false
   externalStorage:
-    # This will disable the internal storage and use the external one defined here
+    # This will disable the internal storage creation and use the external one defined here
     enabled: false
-    # The external PVC must be created manually before installing the chart
-    # The external PVC must be in the same namespace as the WordPress deployment
-    pvcName: clone3-t5-wp-content-pvc
+    # # The external PVC must be created manually before installing the chart
+    # # The external PVC must be in the same namespace as the WordPress deployment
+    # pvcName: clone3-t5-wp-content-pvc
 
 
 database:
@@ -127,7 +162,7 @@ database:
   # Options: "default", "bitpoke", "externalWithReplication"
   mode: "externalWithReplication"
   # This will disable the table prefix created with the release name
-  customTablePrefix: customPrefix_
+  tablePrefix: wp_
   # Default WordPress database settings
   # default:
   #   host: percona-db-pxc-db-haproxy-replicas.percona.svc.cluster.local:3306
@@ -152,6 +187,6 @@ database:
     replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
     dbName: t5_database
     username: t5_user
-    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
-    # actual password: SgYJf+NycEs9qV8x
     secretPasswordKey: U2dZSmYrTnljRXM5cVY4eA==
+    # actual password: SgYJf+NycEs9qVix
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    
