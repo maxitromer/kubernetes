@@ -1,4 +1,7 @@
 global:
+  preferNodeR913thenR912: false
+  preferToDistributePods: true
+  preferToRunOnAMD64: true
   domain:
     names: 
       - t5.markitectos.com
@@ -24,6 +27,11 @@ mautic:
   # Different deployment types
   web:
     replicaCount: 1
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilization: 70
     resources:
       requests:
         cpu: 500m
@@ -34,6 +42,11 @@ mautic:
 
   cron:
     replicaCount: 1
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilization: 70
     resources:
       requests:
         cpu: 200m
@@ -44,6 +57,11 @@ mautic:
 
   worker:
     replicaCount: 1
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilization: 70
     resources:
       requests:
         cpu: 300m
@@ -61,18 +79,25 @@ mautic:
 # Persistent Volumes Configuration with Longhorn
 persistence:
   enabled: true
-  storageClassName: longhorn
+  storageClassName: longhorn-raid-ssd-cached-3-replicas
   accessModes: ReadWriteMany
   size: 2Gi
   keepOnUninstall: false
+
+externalPVC:
+  # This will disable the internal storage creation and use the external one defined here
+  enabled: false
+  # # The external PVC must be created manually before installing the chart
+  # # The external PVC must be in the same namespace as the deployment
+  # pvcName: clone3-t5-pvc
 
 database:
   namespace: databases
   clusterName: mysql-cluster
   primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local
-  primaryPort: 3306
-  replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local
-  replicaPort: 3306
+  # replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local # Not working! Needs to be added manually on local.php
+  port: 3306
+  # table_prefix: mt_ # Not working! Needs to be added using the installer
   dbName: mautic_t5_db
   username: mautic_t5_user
   secretPasswordKey: RFJpUFNWdTVXSFdpYVdoTQ== # base64 format

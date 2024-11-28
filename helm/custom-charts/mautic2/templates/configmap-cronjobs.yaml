@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-mautic-cronjobs-configmap
+data:
+  mautic: |
+    SHELL=/bin/bash
+    PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+    BASH_ENV=/tmp/cron.env
+    # UPDATE LEAD LISTS (EVERY 15 MINUTES)
+    0,15,30,45 * * * * php /var/www/html/bin/console mautic:segments:update 2>&1 | tee /tmp/stdout
+    # UPDATE CAMPAIGNS (EVERY 15 MINUTES)
+    5,20,35,50 * * * * php /var/www/html/bin/console mautic:campaigns:update 2>&1 | tee /tmp/stdout
+    # EXECUTE CAMPAIGNS ACTIONS (EVERY 15 MINUTES)
+    10,25,40,55 * * * * php /var/www/html/bin/console mautic:campaigns:trigger 2>&1 | tee /tmp/stdout
+    # SEND BROADCAST EMAILS (EVERY 20 MINUTES)
+    0,20,40 * * * * php /var/www/html/bin/console mautic:broadcasts:send --limit=10000 2>&1 | tee /tmp/stdout
+    # SEND QUEUE EMAILS (EVERY MINUTE)
+    * * * * * php /var/www/html/bin/console messenger:consume email --limit=300 2>&1 | tee /tmp/stdout
+    # UPDATE MAXMIND GEOLITE2 IP DATABASE (Weekly on Sunday at 00:00)
+    0 0 * * 0 php /var/www/html/bin/console mautic:iplookup:download 2>&1 | tee /tmp/stdout

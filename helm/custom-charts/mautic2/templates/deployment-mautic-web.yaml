@@ -12,10 +12,80 @@ spec:
       labels:
         app: {{ .Release.Name }}-mautic-web
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if $.Values.global.preferToRunOnAMD64 }}
+            - weight: 90
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+            {{- end }}
+            {{- if $.Values.global.preferNodeR913thenR912 }}
+            - weight: 80
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r9-13
+            - weight: 50
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r9-12
+            {{- end }}
+        {{- if $.Values.global.preferToDistributePods }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ .Release.Name }}-mautic-web
+                topologyKey: "kubernetes.io/hostname"
+        {{- end }}
       volumes:
+        # - name: custom-mautic-config
+        #   configMap:
+        #     name: {{ $.Release.Name }}-custom-parameters-local
+        {{- if .Values.externalPVC.enabled }}
+        - name: mautic-data-pvc
+          persistentVolumeClaim:
+            claimName: {{ $.Values.externalPVC.pvcName }}
+        {{- else }}
+        {{- if .Values.persistence.enabled }}
         - name: mautic-data-pvc
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-mautic-data-pvc
+        {{- end }}
+        {{- end }}
+      # initContainers:
+      # - name: init-container
+      #   image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+      #   command: ["/bin/sh", "-c"]
+      #   args:
+      #     - |
+      #       echo "Changing config file owner and permissions..."
+      #       chown -R 82:82 /mnt/local.php
+      #       chmod -R 755 /mnt/local.php
+      #   securityContext:
+      #     runAsUser: 0
+      #   volumeMounts:
+      #     - name: custom-mautic-config
+      #       mountPath: /mnt/local.php
+      #       subPath: local.php
+      #     # - name: mautic-data-pvc
+      #     #   mountPath: /mnt/config
+      #     #   subPath: config
       containers:
       - name: mautic-web
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
@@ -29,6 +99,10 @@ spec:
             cpu: {{ .Values.mautic.web.resources.limits.cpu }}
             memory: {{ .Values.mautic.web.resources.limits.memory }}
         volumeMounts:
+          # - name: custom-mautic-config
+          #   mountPath: /var/www/html/config/parameters_local.php
+          #   subPath: parameters_local.php
+          {{- if or .Values.persistence.enabled .Values.externalPVC.enabled }}
           - name: mautic-data-pvc
             mountPath: /var/www/html/config
             subPath: config
@@ -44,12 +118,17 @@ spec:
           - name: mautic-data-pvc
             mountPath: /opt/mautic/cron
             subPath: cron
+          {{- end }}
         envFrom:
           - configMapRef:
               name: {{ $.Release.Name }}-mautic-configmap          
         env:
           # - name: DOCKER_MAUTIC_ROLE
           #   value: mautic_web
+          # - name: MAUTIC_DB_HOST_RO
+          #   value: moco-mysql-cluster-replica.databases.svc.cluster.local
+          # - name: MAUTIC_DB_TABLE_PREFIX
+          #   value: mm_            
           - name: MAUTIC_DB_PASSWORD
             valueFrom:
               secretKeyRef:

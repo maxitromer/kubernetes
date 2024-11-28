@@ -4,7 +4,9 @@ metadata:
   name: {{ $.Release.Name }}-mautic-configmap
 data:
   MAUTIC_DB_HOST: "{{ .Values.database.primaryHost }}"
-  MAUTIC_DB_PORT: "{{ .Values.database.primaryPort }}"
+  # MAUTIC_DB_HOST_RO: "{{ .Values.database.replicaHost }}"
+  MAUTIC_DB_PORT: "{{ .Values.database.port }}"
+  # MAUTIC_DB_TABLE_PREFIX: "{{ .Values.database.table_prefix }}"
   MAUTIC_DB_DATABASE: "{{ .Values.database.dbName }}"
   MAUTIC_DB_USER: "{{ .Values.database.username }}"
 

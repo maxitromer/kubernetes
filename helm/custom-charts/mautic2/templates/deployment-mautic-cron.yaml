@@ -12,14 +12,68 @@ spec:
       labels:
         app: {{ .Release.Name }}-mautic-cron
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- if $.Values.global.preferToRunOnAMD64 }}
+            - weight: 90
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+            {{- end }}
+            {{- if $.Values.global.preferNodeR913thenR912 }}
+            - weight: 80
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r9-13
+            - weight: 50
+              preference:
+                matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - r9-12
+            {{- end }}
+        {{- if $.Values.global.preferToDistributePods }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ .Release.Name }}-mautic-cron
+                topologyKey: "kubernetes.io/hostname"
+        {{- end }}
       volumes:
+        # - name: custom-mautic-config
+        #   configMap:
+        #     name: {{ $.Release.Name }}-custom-parameters-local
+        - name: cronjobs-configmap
+          configMap:
+            name: {{ $.Release.Name }}-mautic-cronjobs-configmap
+        {{- if .Values.externalPVC.enabled }}
+        - name: mautic-data-pvc
+          persistentVolumeClaim:
+            claimName: {{ $.Values.externalPVC.pvcName }}
+        {{- else }}
+        {{- if .Values.persistence.enabled }}
         - name: mautic-data-pvc
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-mautic-data-pvc
+        {{- end }}
+        {{- end }}
       containers:
       - name: mautic-cron
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
-        command: ["/bin/sh", "-c", "cron && tail -f /dev/null"]
         resources:
           requests:
             cpu: {{ .Values.mautic.cron.resources.requests.cpu }}
@@ -28,6 +82,13 @@ spec:
             cpu: {{ .Values.mautic.cron.resources.limits.cpu }}
             memory: {{ .Values.mautic.cron.resources.limits.memory }}
         volumeMounts:
+          # - name: custom-mautic-config
+          #   mountPath: /var/www/html/config/parameters_local.php
+          #   subPath: parameters_local.php
+          - name: cronjobs-configmap
+            mountPath: /opt/mautic/cron/mautic
+            subPath: mautic
+          {{- if or .Values.persistence.enabled .Values.externalPVC.enabled }}
           - name: mautic-data-pvc
             mountPath: /var/www/html/config
             subPath: config
@@ -43,6 +104,7 @@ spec:
           - name: mautic-data-pvc
             mountPath: /opt/mautic/cron
             subPath: cron
+          {{- end }}
         envFrom:
           - configMapRef:
               name: {{ $.Release.Name }}-mautic-configmap          
