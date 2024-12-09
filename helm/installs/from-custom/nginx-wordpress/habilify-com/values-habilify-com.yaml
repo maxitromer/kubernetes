@@ -7,12 +7,14 @@ global:
   autoscaling:
     enabled: false
     minReplicas: 1
-    maxReplicas: 3
+    maxReplicas: 2
     targetCPUUtilization: 70
   preferToDistributePods: true
   preferToRunOnAMD64: true
   preferNodeR711thenR912: false
-  enableReadinessAndLivenessProbe: false
+  ReadinessAndLivenessProbe:
+    enabled: true
+    websiteSpeed: "normal" # Options: fast, normal, slow
 
 
 resources:
@@ -78,8 +80,10 @@ redis:
   debug: false
   disableConnectionForTroubleshooting: false
   analytics: true
-  sentinelHost: valkey.cache.svc.cluster.local
-  sentinelPort: 26379
+  sentinels:
+    - valkey-node-0.valkey-headless.cache.svc.cluster.local:26379
+    - valkey-node-1.valkey-headless.cache.svc.cluster.local:26379
+    - valkey-node-2.valkey-headless.cache.svc.cluster.local:26379
   service: mymaster
   database: 2
   password: "rK#W4w&n4n2J^r9CWDT"
@@ -94,14 +98,47 @@ wordpress:
   removePreintalledPluginsAndThemes: false 
   enableMemcached: false
   wpRocket: false
-  customPHPini:
-    enabled: true
-    uploadMaxFilesize: 100M
+  configSize: "small"  # Options: small, medium, large, extraLarge
+  # phpFpm:
+  #   postMaxSize: ~
+  #   uploadMaxFilesize: ~
+  #   maxInputVars: ~
+  #   maxInputTime: ~
+  #   outputBuffering: ~
+  #   pmMaxChildren: ~
+  #   pmStartServers: ~
+  #   pmMinSpareServers: ~
+  #   pmMaxSpareServers: ~
+  #   pmMaxRequests: ~
+  #   requestTerminateTimeout: ~
+  #   memoryLimit: ~
+  #   maxExecutionTime: ~
+  #   statusPath: ~
+  #   slowlog: ~
+  #   requestSlowlogTimeout: ~
+  phpIni:
     postMaxSize: 100M
-    memoryLimit: 256M
-    maxExecutionTime: 600
-    maxInputVars: 1000
-    maxInputTime: 400 
+    uploadMaxFilesize: 100M
+  #   realpathCacheSize: ~
+  #   realpathCacheTtl: ~
+  #   maxInputVars: ~
+  #   maxInputTime: ~
+  #   outputBuffering: ~
+  #   maxExecutionTime: ~
+  #   memoryLimit: ~
+  #   opcacheMemoryConsumption: ~
+  #   opcacheMaxAcceleratedFiles: ~
+  #   opcacheInternedStringsBuffer: ~
+  #   opcacheRevalidateFreq: ~
+
+  # customPHPini: # (will be deprecated)
+  #   enabled: ~ # true
+  #   uploadMaxFilesize: ~ # 100M
+  #   postMaxSize: ~ # 100M
+  #   memoryLimit: ~ # 256M
+  #   maxExecutionTime: ~ # 600
+  #   maxInputVars: ~ # 1000
+  #   maxInputTime: ~ # 400 
   storage:
     enabled: true
     accessModes: ReadWriteMany
