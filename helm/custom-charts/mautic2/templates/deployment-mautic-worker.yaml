@@ -68,9 +68,50 @@ spec:
             claimName: {{ .Release.Name }}-mautic-data-pvc
         {{- end }}
         {{- end }}
+      # initContainers:
+      # - name: copy-defaults
+      #   image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+      #   command: ["/bin/sh", "-c"]
+      #   args:
+      #     - |
+      #       if [ -z "$(ls -A /mnt/plugins)" ]; then
+      #         cp -rn /var/www/html/docroot/plugins/* /mnt/plugins
+      #         chown -R 82:82 /mnt/plugins
+      #       fi
+      #       if [ -z "$(ls -A /mnt/themes)" ]; then
+      #         cp -rn /var/www/html/docroot/themes/* /mnt/themes
+      #         chown -R 82:82 /mnt/plugins
+      #       fi
+      #   volumeMounts:
+      #     - name: mautic-data-pvc
+      #       mountPath: /mnt/plugins
+      #       subPath: plugins
+      #     - name: mautic-data-pvc
+      #       mountPath: /mnt/themes
+      #       subPath: themes
       containers:
       - name: mautic-worker
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - 'pgrep supervisord && pgrep -f "messenger:consume"'
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - 'pgrep supervisord && pgrep -f "messenger:consume"'
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         resources:
           requests:
             cpu: {{ .Values.mautic.worker.resources.requests.cpu }}
@@ -95,6 +136,15 @@ spec:
           - name: mautic-data-pvc
             mountPath: /var/www/html/docroot/media/images
             subPath: media/images
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/plugins
+            subPath: plugins
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/themes
+            subPath: themes
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/translations
+            subPath: translations                                    
           - name: mautic-data-pvc
             mountPath: /opt/mautic/cron
             subPath: cron

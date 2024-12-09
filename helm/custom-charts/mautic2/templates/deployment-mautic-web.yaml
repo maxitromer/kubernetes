@@ -68,29 +68,52 @@ spec:
             claimName: {{ .Release.Name }}-mautic-data-pvc
         {{- end }}
         {{- end }}
-      # initContainers:
-      # - name: init-container
-      #   image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
-      #   command: ["/bin/sh", "-c"]
-      #   args:
-      #     - |
-      #       echo "Changing config file owner and permissions..."
-      #       chown -R 82:82 /mnt/local.php
-      #       chmod -R 755 /mnt/local.php
-      #   securityContext:
-      #     runAsUser: 0
-      #   volumeMounts:
-      #     - name: custom-mautic-config
-      #       mountPath: /mnt/local.php
-      #       subPath: local.php
-      #     # - name: mautic-data-pvc
-      #     #   mountPath: /mnt/config
-      #     #   subPath: config
+      initContainers:
+      - name: copy-defaults
+        image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            if [ -z "$(ls -A /mnt/plugins)" ]; then
+              cp -rn /var/www/html/docroot/plugins/* /mnt/plugins
+              chown -R 82:82 /mnt/plugins
+            fi
+            if [ -z "$(ls -A /mnt/themes)" ]; then
+              cp -rn /var/www/html/docroot/themes/* /mnt/themes
+              chown -R 82:82 /mnt/plugins
+            fi
+        volumeMounts:
+          - name: mautic-data-pvc
+            mountPath: /mnt/plugins
+            subPath: plugins
+          - name: mautic-data-pvc
+            mountPath: /mnt/themes
+            subPath: themes
       containers:
       - name: mautic-web
         image: "{{ .Values.mautic.image.repository }}:{{ .Values.mautic.image.tag }}"
         ports:
         - containerPort: 80
+        {{- if .Values.global.enableReadinessAndLivenessProbe }}
+        readinessProbe:
+          httpGet:
+            path: /s/login
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /mtc.js
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        {{- end }}
         resources:
           requests:
             cpu: {{ .Values.mautic.web.resources.requests.cpu }}
@@ -116,6 +139,15 @@ spec:
             mountPath: /var/www/html/docroot/media/images
             subPath: media/images
           - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/plugins
+            subPath: plugins
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/themes
+            subPath: themes
+          - name: mautic-data-pvc
+            mountPath: /var/www/html/docroot/translations
+            subPath: translations
+          - name: mautic-data-pvc
             mountPath: /opt/mautic/cron
             subPath: cron
           {{- end }}
@@ -134,3 +166,13 @@ spec:
               secretKeyRef:
                 name: {{ $.Release.Name }}-db-pass
                 key: password
+        lifecycle:
+          postStart:
+            exec:
+              command: 
+                - "/bin/sh"
+                - "-c"
+                - >
+                  rm -rf /var/www/html/var/cache/prod/* &&
+                  rm -rf /var/www/html/var/cache/dev/* &&
+                  echo "Post-start cache deletion completed" >> /proc/1/fd/1            

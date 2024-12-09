@@ -12,5 +12,6 @@ data:
 
   MAUTIC_MESSENGER_DSN_EMAIL: "doctrine://default"
   MAUTIC_MESSENGER_DSN_HIT: "doctrine://default"
+  MAUTIC_MESSENGER_DSN_FAILED: "doctrine://default"
   DOCKER_MAUTIC_RUN_MIGRATIONS: "false"
   DOCKER_MAUTIC_LOAD_TEST_DATA: "false"

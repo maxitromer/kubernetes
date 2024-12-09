@@ -1,4 +1,5 @@
 global:
+  enableReadinessAndLivenessProbe: true # BUG: Is not working
   preferNodeR913thenR912: false
   preferToDistributePods: true
   preferToRunOnAMD64: true
@@ -21,7 +22,7 @@ mautic:
   # Mautic container configurations
   image:
     repository: mautic/mautic
-    tag: 5.1.1-apache
+    tag: 5.2.0-apache
     pullPolicy: IfNotPresent
 
   # Different deployment types
@@ -76,6 +77,26 @@ mautic:
   #   host: redis-cluster.cache.svc.cluster.local
   #   port: 6379
 
+cronjobs:
+  # UPDATE LEAD LISTS (EVERY 15 MINUTES)
+  - command: "php /var/www/html/bin/console mautic:segments:update 2>&1"
+    schedule: "0,15,30,45 * * * *"
+  # UPDATE CAMPAIGNS (EVERY 15 MINUTES)
+  - command: "php /var/www/html/bin/console mautic:campaigns:update 2>&1"
+    schedule: "5,20,35,50 * * * *"
+  # EXECUTE CAMPAIGNS ACTIONS (EVERY 15 MINUTES)
+  - command: "php /var/www/html/bin/console mautic:campaigns:trigger 2>&1"
+    schedule: "10,25,40,55 * * * *"
+  # SEND BROADCAST EMAILS (EVERY 20 MINUTES)
+  - command: "php /var/www/html/bin/console mautic:broadcasts:send --limit=10000 2>&1"
+    schedule: "0,20,40 * * * *"
+  # SEND QUEUE EMAILS (EVERY MINUTE)
+  - command: "php /var/www/html/bin/console messenger:consume email --limit=300 2>&1"
+    schedule: "* * * * *"
+  # UPDATE MAXMIND GEOLITE2 IP DATABASE (Weekly on Sunday at 00:00)
+  - command: "php /var/www/html/bin/console mautic:iplookup:download 2>&1"
+    schedule: "0 0 * * 0"                
+
 # Persistent Volumes Configuration with Longhorn
 persistence:
   enabled: true
@@ -100,5 +121,5 @@ database:
   # table_prefix: mt_ # Not working! Needs to be added using the installer
   dbName: mautic_t5_db
   username: mautic_t5_user
-  secretPasswordKey: RFJpUFNWdTVXSFdpYVdoTQ== # base64 format
-  # actual password: DRiPSVu5WHWiaWhM
+  secretPasswordKey: QTVFNkhISUJSV2VZSEFpOA== # base64 format
+  # actual password: A5E6HHIBRWeYHAi8
