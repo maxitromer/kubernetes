@@ -64,7 +64,9 @@ data:
           'database' => {{ .Values.redis.database }}, // change for each site
           'service' => '{{ .Values.redis.service }}',
           'sentinels' => [
-              'tcp://{{ .Values.redis.sentinelHost }}:{{ .Values.redis.sentinelPort }}',
+              {{- range .Values.redis.sentinels }}
+              'tcp://{{ . }}',
+              {{- end }}
           ],
           'maxttl' => 86400 * 7,
           'timeout' => 0.5,

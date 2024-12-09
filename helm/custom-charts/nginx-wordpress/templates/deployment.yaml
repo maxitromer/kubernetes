@@ -154,21 +154,50 @@ spec:
           ports:
             - containerPort: 80
             - containerPort: 9000
-          {{- if .Values.global.enableReadinessAndLivenessProbe }}
+          {{- if .Values.global.ReadinessAndLivenessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: /wp-admin/install.php
+              path: /wp-includes/images/blank.gif # Verifica si la imagen está disponible, lo que indica que wordpress está presente y nginx funcionando. Si no está disponible, no recibe tráfico, pero el pod sigue corriendo.
               port: 80
-            initialDelaySeconds: 120
-            periodSeconds: 10
-            failureThreshold: 3
+            {{- if eq (default "normal" $.Values.global.ReadinessAndLivenessProbe.websiteSpeed) "fast" }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.periodSeconds | default 5 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.failureThreshold | default 2 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.timeoutSeconds | default 3 }}
+            successThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.successThreshold | default 1 }}
+            {{- else if eq (default "normal" $.Values.global.ReadinessAndLivenessProbe.websiteSpeed) "slow" }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.initialDelaySeconds | default 120 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.periodSeconds | default 20 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.failureThreshold | default 5 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.timeoutSeconds | default 10 }}
+            successThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.successThreshold | default 1 }}
+            {{- else }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.initialDelaySeconds | default 60 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.periodSeconds | default 10 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.failureThreshold | default 3 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ .Values.global.ReadinessAndLivenessProbe.readinessProbe.successThreshold | default 1 }}
+            {{- end }}
           livenessProbe:
             httpGet:
-              path: /wp-login.php
+              path: /wp-admin/install.php # Esta página además requiere acceso a PHP, PHP-FPM y base de datos, por lo que detecta si hay errores en procesos críticos. Si falla, Kubernetes reinicia el contenedor.
               port: 80
-            initialDelaySeconds: 120
-            periodSeconds: 10
-            failureThreshold: 3
+            {{- if eq (default "normal" $.Values.global.ReadinessAndLivenessProbe.websiteSpeed) "fast" }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.periodSeconds | default 30 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.failureThreshold | default 2 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.timeoutSeconds | default 3 }}
+            {{- else if eq (default "normal" $.Values.global.ReadinessAndLivenessProbe.websiteSpeed) "slow" }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.initialDelaySeconds | default 120 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.periodSeconds | default 30 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.failureThreshold | default 3 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.timeoutSeconds | default 10 }}
+            {{- else }}
+            initialDelaySeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.initialDelaySeconds | default 60 }}
+            periodSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.periodSeconds | default 30 }}
+            failureThreshold: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.failureThreshold | default 3 }}
+            timeoutSeconds: {{ .Values.global.ReadinessAndLivenessProbe.livenessProbe.timeoutSeconds | default 5 }}
+            {{- end }}
           {{- end }}
           volumeMounts:
               {{- if $.Values.nginx.customNginxConf.enabled }}
