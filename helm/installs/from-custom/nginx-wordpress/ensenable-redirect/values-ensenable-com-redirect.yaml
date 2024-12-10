@@ -1,0 +1,19 @@
+domains:
+  # You can add multiple domains in the FROM like:
+  # - domain2.com
+  # - domain3.com
+  from:
+    - ensenable.com
+    - t1.ensenable.com
+    - t4.markitectos.com  
+  to: xn--enseable-g3a.com
+
+fromConfigs:
+  permanent: true
+  addWWW: true
+
+# This is for the FROM domains only
+SSLcertificate: 
+  enabled: true
+  productionReady: false  # on false will use letsencrypt-staging
+  keepOnUninstall: true
