@@ -171,11 +171,11 @@ database:
   # External DB with replication settings
   externalWithReplication:
     namespace: databases
-    clusterName: mysql-cluster
-    primaryHost: moco-mysql-cluster-primary.databases.svc.cluster.local:3306
-    replicaHost: moco-mysql-cluster-replica.databases.svc.cluster.local:3306
+    clusterName: testing-cluster
+    primaryHost: moco-testing-cluster-primary.databases.svc.cluster.local:3306
+    replicaHost: moco-testing-cluster-replica.databases.svc.cluster.local:3306
     dbName: t3_db
     username: t3_user
-    secretPasswordKey: K0ZjSnlQaVhRcnlhSXNNdQ== # base64 format
-    # actual password: +FcJyPiXQryaIsMu
+    secretPasswordKey: aDZQVHNMR05kMVRSRVNRcg== # base64 format
+    # actual password: h6PTsLGNd1TRESQr
     ## To create the password key to set this run # echo -n '<your_actual_password>' | base64 
