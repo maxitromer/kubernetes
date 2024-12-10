@@ -1,5 +1,0 @@
-apiVersion: v1
-name: mautic-scalable-deployment
-description: A Helm chart for scalable Mautic deployment with Traefik and Longhorn
-version: 0.1.0
-appVersion: 4.4.x
