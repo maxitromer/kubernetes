@@ -1,0 +1,156 @@
+# This example shows how to set MySQL server system variables.
+# The default and constant configuration values for mysqld are available on:
+# https://pkg.go.dev/github.com/cybozu-go/moco/pkg/mycnf#pkg-variables
+# The settings in ConstMycnf cannot be changed while the settings in DefaultMycnf can be overridden.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: databases
+  name: testing-mycnf
+data:
+  # key-value in data field will become server system variable names and values.
+  # https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
+  # https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html
+  long_query_time: "2"
+  innodb_buffer_pool_size: "1G"
+
+  ## ---
+
+  # # Risk in a power outage: Medium
+  # # https://chatgpt.com/c/674f0bec-7e24-8006-b19b-72d5a08683b8
+  # # innodb_log_file_size: "4G" # 256M
+  # innodb_page_cleaners: "3"                # Number of page cleaners should match the CPU count
+  # innodb_log_buffer_size: "16M"           # Reduced to avoid excessive memory usage
+  # max_allowed_packet: "64M"               # Suitable for most queries, avoids memory spikes
+  # innodb_buffer_pool_instances: "1"      # For smaller RAM, a single buffer pool instance is more efficient
+  # innodb_thread_concurrency: "3"         # Set to the number of CPUs
+  # innodb_stats_on_metadata: "0"          # Keeps it disabled to avoid unnecessary overhead
+  # innodb_lru_scan_depth: "256"           # Reduced to save CPU cycles
+  # max_binlog_size: "50M"                 # Reduced for smaller disk usage
+  # binlog_format: "ROW"                   # Recommended for replication consistency
+  # innodb_buffer_pool_chunk_size: "64M"   # Smaller chunk size due to limited RAM
+  # innodb_redo_log_capacity: "512M"       # Reduced to avoid wasting too much RAM
+  # innodb_force_recovery: "0"             # Default value to prevent recovery mode
+  # innodb_buffer_pool_size: "2G"          # 70% of available memory for InnoDB buffer pool
+  # innodb_flush_log_at_trx_commit: "1"    # Ensures ACID compliance
+  # innodb_flush_method: "O_DIRECT"        # Best for SSDs and avoids double buffering
+  # innodb_io_capacity: "1000"             # Reduced I/O capacity to avoid overloading the system
+  # innodb_io_capacity_max: "2000"         # Maximum I/O capacity
+  # innodb_read_io_threads: "3"            # Matches the CPU count
+  # innodb_write_io_threads: "3"           # Matches the CPU count
+  # innodb_file_per_table: "1"             # Keeps it enabled for better table independence
+  # max_connections: "100"                 # Reduced for limited memory and to avoid overload
+  # thread_cache_size: "16"                # Smaller cache to avoid memory bloat
+  # tmp_table_size: "64M"                  # Reasonable size to avoid using disk for temp tables
+  # max_heap_table_size: "64M"             # Same as tmp_table_size
+  # join_buffer_size: "4M"                 # Reduced for smaller memory usage
+  # sort_buffer_size: "4M"                 # Same as join_buffer_size
+  # read_rnd_buffer_size: "4M"             # Reduced to save memory
+  # table_open_cache: "2000"               # Adjusted for available memory
+  # table_definition_cache: "2000"         # Same as table_open_cache
+  # sync_binlog: "1"                       # Ensures durability
+  # innodb_doublewrite: "1"                # Keeps data integrity intact
+  # innodb_max_dirty_pages_pct: "40"       # Keeps more pages clean to avoid disk writes
+  # innodb_buffer_pool_dump_at_shutdown: "1"  # Dumps buffer pool for faster startup
+  # innodb_buffer_pool_load_at_startup: "1"  # Loads buffer pool on startup
+  # skip_replica_start: "1"                # Skip replication on start if this is not a replica
+  # authentication_policy: "'*'"           # No change, but it's generally secure
+
+---
+
+apiVersion: moco.cybozu.com/v1beta2
+kind: MySQLCluster
+metadata:
+  namespace: databases
+  name: testing-cluster
+spec:
+  # replicas is the number of mysqld Pods.  The default is 1.
+  replicas: 3
+  # ConfigMap name in the same namespace.
+  # backupPolicyName: moco-backups
+  mysqlConfigMapName: testing-mycnf
+  collectors:
+  # collectors is a list of collector flag names used by mysqld_exporter and Prometheus.
+  # See https://github.com/prometheus/mysqld_exporter/blob/master/README.md#collector-flags for all available collectors.
+    # - global_status
+    # - global_variables
+    # - slave_status
+    # - slave_hosts
+    # - info_schema.processlist
+    # - info_schema.processlist.min_time=5
+    # - perf_schema.eventsstatements
+    # - perf_schema.eventsstatements.digest_text_limit=120
+    # - perf_schema.eventsstatements.limit=250
+    # - perf_schema.eventsstatements.timelimit=300
+    # - perf_schema.replication_group_members
+    # - perf_schema.replication_group_member_stats
+    # - perf_schema.replication_applier_status_by_worker
+    # # - heartbeat
+    # - info_schema.tablestats
+    # - perf_schema.tablelocks
+    # - perf_schema.file_events
+    # - info_schema.userstats
+    # - info_schema.tables
+    # - info_schema.replica_host
+    # - perf_schema.eventsstatementssum
+    # - engine_innodb_status
+    # - perf_schema.tableiowaits
+    # - perf_schema.indexiowaits
+    # - perf_schema.eventswaits
+    # - binlog_size
+    # - auto_increment.columns
+    # - mysql.user
+    # - sys.user_summary
+    # - info_schema.innodb_metrics
+    # - info_schema.innodb_tablespaces
+    # - info_schema.innodb_cmp
+    # - info_schema.innodb_cmpmem
+    # - info_schema.clientstats
+    # - info_schema.schemastats
+    # - info_schema.query_response_time
+    # - perf_schema.memory_events
+    # - perf_schema.file_instances
+
+  podTemplate:
+    spec:
+      # Make the data directory writable. If moco-init fails with "Permission denied", uncomment the following settings.
+      # securityContext:
+      #   fsGroup: 10000
+      #   fsGroupChangePolicy: "OnRootMismatch"  # available since k8s 1.20
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - mysql
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - testing-cluster
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      # At least a container named "mysqld" must be defined.
+      - name: mysqld
+        image: ghcr.io/cybozu-go/moco/mysql:8.0.28
+        # By limiting CPU and memory, Pods will have Guaranteed QoS class.
+        # requests can be omitted; it will be set to the same value as limits.
+        resources:
+          requests:
+            cpu: "2"
+            memory: "2Gi"
+          limits:
+            cpu: "4"
+            memory: "4Gi"            
+  volumeClaimTemplates:
+  # At least a PVC named "mysql-data" must be defined.
+  - metadata:
+      name: mysql-data
+    spec:
+      storageClassName: longhorn
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
