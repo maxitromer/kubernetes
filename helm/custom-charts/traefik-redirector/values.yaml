@@ -1,0 +1,17 @@
+domains:
+  # You can add multiple domains in the FROM like:
+  # - domain1.com
+  # - domain2.com
+  from:
+    - old-domain.com
+  to: new-domain.com
+
+fromConfigs:
+  permanent: false
+  addWWW: true
+
+# This is for the FROM domains only
+SSLcertificate: 
+  enabled: true
+  productionReady: false  # on false will use letsencrypt-staging
+  keepOnUninstall: false

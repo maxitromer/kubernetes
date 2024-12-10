@@ -1,0 +1,4 @@
+apiVersion: v2
+name: traefik-redirector
+description: A Helm chart for redirect a domain to another domain
+version: 0.1.0

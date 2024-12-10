@@ -1,0 +1,13 @@
+{{- range $.Values.domains.from }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ . | replace "." "-" }}-redirector
+  namespace: {{ $.Release.Namespace }}
+spec:
+  redirectRegex:
+    regex: ^https?://{{ if $.Values.fromConfigs.addWWW }}(www\.)?{{ end }}{{ . }}(.*)
+    replacement: https://{{ $.Values.domains.to }}$2
+    permanent: {{ $.Values.fromConfigs.permanent }}
+{{- end }}

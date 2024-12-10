@@ -1,0 +1,26 @@
+{{- range .Values.domains.from }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ . | replace "." "-" }}-{{ if $.Values.SSLcertificate.productionReady }}prod{{ else }}staging{{ end }}-certificate
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    {{- if $.Values.SSLcertificate.keepOnUninstall }}
+    helm.sh/resource-policy: keep
+    {{- end }}
+spec:
+  secretName: {{ . | replace "." "-" }}-{{ if $.Values.SSLcertificate.productionReady }}prod{{ else }}staging{{ end }}-ssl-secret
+  issuerRef:
+    {{- if $.Values.SSLcertificate.productionReady }}
+    name: letsencrypt-production
+    {{- else }}
+    name: letsencrypt-staging
+    {{- end }}
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ . }}
+    {{- if $.Values.fromConfigs.addWWW }}
+    - www.{{ . }}
+    {{- end }}
+{{- end }}
