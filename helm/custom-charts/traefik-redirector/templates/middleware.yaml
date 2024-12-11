@@ -7,7 +7,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
 spec:
   redirectRegex:
-    regex: ^https?://{{ if $.Values.fromConfigs.addWWW }}(www\.)?{{ end }}{{ . }}(.*)
-    replacement: https://{{ $.Values.domains.to }}$2
+    # regex: ^https?://{{ if $.Values.fromConfigs.addWWW }}(www\.)?{{ end }}{{ . }}(.*)
+    regex: http(s)?:\/\/(www\.)?{{ . | replace "." "\\." }}\/(.*)
+    replacement: https://{{ $.Values.domains.to }}/$3
     permanent: {{ $.Values.fromConfigs.permanent }}
 {{- end }}
