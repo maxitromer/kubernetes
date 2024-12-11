@@ -3,9 +3,7 @@ domains:
   # - domain2.com
   # - domain3.com
   from:
-    - ensenable.com
-    - t1.ensenable.com
-    - t4.markitectos.com  
+    - ensenable.com 
   to: xn--enseable-g3a.com
 
 fromConfigs:
