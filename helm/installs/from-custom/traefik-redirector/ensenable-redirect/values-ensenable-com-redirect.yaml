@@ -13,5 +13,5 @@ fromConfigs:
 # This is for the FROM domains only
 SSLcertificate: 
   enabled: true
-  productionReady: false  # on false will use letsencrypt-staging
+  productionReady: true  # on false will use letsencrypt-staging
   keepOnUninstall: true
