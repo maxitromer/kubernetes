@@ -144,9 +144,16 @@ spec:
         - name: nginx-wordpress
           image: {{ .Values.global.customImage }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-          # securityContext:
-          #   runAsUser: 82
-          #   runAsGroup: 82
+          {{- if .Values.wordpress.wpCron.enabled }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e;
+              crond;
+              echo "{{ .Values.wordpress.wpCron.frequency }} wget -q -O /dev/null http://127.0.0.1/wp-cron.php?doing_wp_cron" > /tmp/crontab;
+              crontab /tmp/crontab;
+              exec /usr/local/bin/custom-entrypoint.sh
+          {{- end }}
           securityContext:
             capabilities:
               add:

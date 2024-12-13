@@ -98,3 +98,6 @@ data:
       define('WP_REDIS_DISABLED', true); //Disable WP Redis for troubleshouting      
       {{- end }}
       {{- end }}
+      {{- if .Values.wordpress.wpCron.enabled }}
+      define('DISABLE_WP_CRON', true);
+      {{- end }}

@@ -170,6 +170,9 @@ wordpress:
     # # The external PVC must be created manually before installing the chart
     # # The external PVC must be in the same namespace as the WordPress deployment
     # pvcName: clone3-t5-wp-content-pvc
+  wpCron:
+    enabled: true
+    frequency: "*/5 * * * *"
 
 
 database:
@@ -204,4 +207,4 @@ database:
     username: t5_user
     secretPasswordKey: U2dZSmYrTnljRXM5cVY4eA==
     # actual password: SgYJf+NycEs9qVix
-    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64    
+    ## To create the password key to set this run # echo -n '<your_actual_password>' | base64
