@@ -146,6 +146,9 @@ wordpress:
     # You only can increase this value, and if you do you will have to delete the pod for the resize take effect.
     size: 3Gi
     keepOnUninstall: true
+  wpCron:
+    enabled: true
+    frequency: "*/30 * * * *"
 
 database:
   # Select which database configuration to use

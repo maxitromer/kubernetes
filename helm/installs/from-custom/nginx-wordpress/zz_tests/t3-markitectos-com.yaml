@@ -13,7 +13,7 @@ global:
   preferToRunOnAMD64: true
   preferNodeR711thenR912: false
   ReadinessAndLivenessProbe:
-    enabled: true
+    enabled: false
     websiteSpeed: "normal" # Options: fast, normal, slow
 
 resources:
@@ -146,6 +146,9 @@ wordpress:
     # You only can increase this value, and if you do you will have to delete the pod for the resize take effect.
     size: 3Gi
     keepOnUninstall: false
+  wpCron:
+    enabled: true
+    frequency: "*/2 * * * *"
 
 database:
   # Select which database configuration to use
