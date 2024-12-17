@@ -1,0 +1,61 @@
+# helm install n8n oci://8gears.container-registry.com/library/n8n \
+#   --version 0.25.2 \
+#   -f installed-values.yaml \
+#   --namespace automation \
+#   --create-namespace
+
+config:
+  database:
+    type: sqlite
+#     postgresdb:
+#       host: 192.168.0.52
+# secret:
+#   database:
+#     postgresdb:
+#       password: 'big secret'
+
+## Common Kubernetes Config Settings
+persistence:
+  ## If true, use a Persistent Volume Claim, If false, use emptyDir
+  ##
+  enabled: true
+  type: dynamic 
+  storageClass: "longhorn-raid-ssd-cached-3-replicas"
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
+replicaCount: 1
+
+image:
+  repository: n8nio/n8n
+  pullPolicy: IfNotPresent
+  tag: "1.72.1"
+
+# nodeSelector:
+#   kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.  
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 90
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/arch
+              operator: In
+              values:
+                - amd64
+      - weight: 80
+        preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - r9-13
+      - weight: 50
+        preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - r9-11
