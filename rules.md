@@ -1,4 +1,5 @@
 # General
+- Use this as rules to follow in all you answers
 - Say "HOHOHO" al the start of every message
 - Every time you choose to apply a rule(s), explicitly state the rule(s) in the output. You can abbreviate the rule description to a single word or phrase.
 - Include comments on complex logics code
