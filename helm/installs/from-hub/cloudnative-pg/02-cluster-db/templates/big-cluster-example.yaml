@@ -1,0 +1,121 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: databases
+spec:
+  instances: 3  # Ensure 3 replicas for high availability
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.2-18  # Use the PostgreSQL version you prefer => https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql/versions?filters%5Bversion_type%5D=tagged
+  storage:
+    # storageClass: raid-ssd-cached-local-path # longhorn
+    size: 5Gi  # Can Not Be Resized!
+  primaryUpdateStrategy: unsupervised  # Automatically update primary
+  primaryUpdateMethod: switchover # setting the most aligned replica as the new target primary, and shutting down the former primary pod
+  enableSuperuserAccess: true  # Enable superuser creation and usage
+  postgresql:
+    parameters:
+
+      # **Memory and Cache**
+      shared_buffers: "22GB"  # Similar to innodb_buffer_pool_size
+      effective_cache_size: "44GB"  # Roughly 2x shared_buffers
+      work_mem: "16MB"  # Per-session memory for joins and sorts (like join_buffer_size and sort_buffer_size)
+      maintenance_work_mem: "512MB"  # For VACUUM and other maintenance tasks
+      temp_buffers: "512MB"  # Memory for temporary tables (like tmp_table_size)
+      
+      # **Logging and WAL**
+      wal_level: "replica"  # Required for replication, similar to MySQL binlog
+      max_wal_size: "4GB"  # Similar to innodb_log_file_size
+      min_wal_size: "1GB"
+      wal_buffers: "16MB"  # Cache for WAL writes
+      synchronous_commit: "on"  # Similar to innodb_flush_log_at_trx_commit=1
+      archive_mode: "on"
+      archive_command: "cp %p /var/lib/postgresql/data/archive/%f"
+      
+      # **Connections and Concurrency**
+      max_connections: "1500"  # Same as MySQL's max_connections
+      superuser_reserved_connections: "3"  # Reserve connections for admin tasks
+      
+      # **Replication**
+      synchronous_standby_names: "*"  # Wait for at least 1 standby to acknowledge
+      hot_standby: "on"  # Allow reads from replicas
+      
+      # **Disk I/O**
+      effective_io_concurrency: "12"  # Similar to innodb_read_io_threads and innodb_write_io_threads
+      max_parallel_workers_per_gather: "12"  # Leverage multi-threaded queries
+      parallel_setup_cost: "1000"
+      parallel_tuple_cost: "0.1"
+      
+      # **Table and Cache Management**
+      max_locks_per_transaction: "1500"  # Similar to table_open_cache
+      max_files_per_process: "15000"  # Similar to table_open_cache
+      
+      # **Write-Ahead Logging (WAL) Settings**
+      wal_writer_delay: "200ms"
+      commit_delay: "100"  # Delay commit to group commits together
+      
+      # **Autovacuum and Maintenance**
+      autovacuum: "on"
+      autovacuum_max_workers: "3"
+      autovacuum_naptime: "10s"
+      autovacuum_vacuum_threshold: "50"
+      autovacuum_analyze_threshold: "50"
+      autovacuum_vacuum_cost_limit: "200"
+      
+      # **Other Key Settings**
+      max_worker_processes: "12"
+      max_parallel_workers: "12"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"  # Tuning for SSDs
+      cpu_tuple_cost: "0.01"
+      cpu_index_tuple_cost: "0.005"
+      cpu_operator_cost: "0.0025"
+
+  # resources:
+  #   requests:
+  #     cpu: "4"
+  #     memory: "6Gi"
+  #   limits:
+  #     cpu: "12"
+  #     memory: "24Gi"
+
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    nodeSelector:
+      kubernetes.io/arch: amd64
+
+---
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: db-pooler-rw
+  namespace: databases
+spec:
+  cluster:
+    name: postgres-cluster
+  instances: 3
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "10"
+  monitoring:
+    enablePodMonitor: true
+  template:
+    metadata:
+      labels:
+        app: pooler
+    spec:
+      containers: []
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - pooler
+            topologyKey: "kubernetes.io/hostname"  
