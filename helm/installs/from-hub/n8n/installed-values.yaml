@@ -8,6 +8,7 @@ config:
   database:
     type: sqlite
 #     postgresdb:
+#       database: n8n
 #       host: 192.168.0.52
 # secret:
 #   database:
@@ -59,3 +60,16 @@ affinity:
             operator: In
             values:
             - r9-11
+
+# scaling:
+#   enabled: true # the workload is shared between multiple instances of same n8n installation
+#   # webhook:
+#   #   enabled: true # webhook processing on the main instance is disabled and by default a single webhook instance is started.
+#   #   count: 1 # Number of workers
+
+#   worker:
+#     count: 2 # Number of workers
+#     # concurrency: 2
+
+# redis:
+#   enabled: true # use the internal redis server
