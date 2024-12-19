@@ -6,10 +6,14 @@
 
 config:
   database:
-    type: sqlite
-#     postgresdb:
-#       database: n8n
-#       host: 192.168.0.52
+    type: postgresdb # Type of database to use - Other possible types ['sqlite', 'mariadb', 'mysqldb', 'postgresdb'] - default: sqlite
+    tablePrefix: 'n81_'      # Prefix for table names - default: ''
+    postgresdb:
+      database: n8n_db                               # PostgresDB Database - default: n8n
+      host: db-pooler-rw.databases.svc.cluster.local # PostgresDB Host - default: localhost
+      password: 'mon57Dy!jPkJKkckgCx4hd6P%sPen'      # PostgresDB Password - default: ''
+      port: 5432                                     # PostgresDB Port - default: 5432
+      user: n8n_user                                 # PostgresDB User - default: root
 # secret:
 #   database:
 #     postgresdb:
@@ -21,31 +25,26 @@ persistence:
   ##
   enabled: true
   type: dynamic 
-  storageClass: "longhorn-raid-ssd-cached-3-replicas"
+  storageClass: "longhorn-hdd-2-replicas"
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   size: 10Gi
+  annotations:
+    helm.sh/resource-policy: keep
 
 replicaCount: 1
 
 image:
   repository: n8nio/n8n
   pullPolicy: IfNotPresent
-  tag: "1.72.1"
+  tag: "1.73.1"
 
-# nodeSelector:
-#   kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.  
+nodeSelector:
+  kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.  
 
 affinity:
   nodeAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 90
-        preference:
-          matchExpressions:
-            - key: kubernetes.io/arch
-              operator: In
-              values:
-                - amd64
       - weight: 80
         preference:
           matchExpressions:
@@ -61,15 +60,32 @@ affinity:
             values:
             - r9-11
 
-# scaling:
-#   enabled: true # the workload is shared between multiple instances of same n8n installation
-#   # webhook:
-#   #   enabled: true # webhook processing on the main instance is disabled and by default a single webhook instance is started.
-#   #   count: 1 # Number of workers
+extraEnv:
+  N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+  N8N_ENCRYPTION_KEY: "ijxt4HKewg2BakTJfGBJJCJCrV0Diz3J2AAVUP0ozeQ="
 
-#   worker:
-#     count: 2 # Number of workers
-#     # concurrency: 2
 
-# redis:
-#   enabled: true # use the internal redis server
+extraEnvSecrets:
+  QUEUE_BULL_REDIS_PASSWORD:
+    name: n8n-redis  # Nombre del secreto que contiene la contraseña de Redis
+    key: redis-password  # La clave dentro del secreto que almacena la contraseña
+
+scaling:
+  enabled: true # the workload is shared between multiple instances of same n8n installation
+  worker:
+    count: 2 # Number of workers
+    # concurrency: 2 # Number of jobs that can be processed concurrently by each worker
+
+  webhook:
+    enabled: true # webhook processing on the main instance is disabled and by default a single webhook instance is started.
+    count: 1 # Number of workers
+
+redis:
+  enabled: true # use the internal redis server
+  architecture: standalone
+
+  master:
+    persistence:
+      enabled: true
+      storageClass: "longhorn-hdd-1-replica"
+      size: 5Gi
