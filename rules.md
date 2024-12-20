@@ -32,3 +32,5 @@ manifests/         # Installation files and values for some apps, not all this a
 - Valkey version 8 as Redis open source alternative
 - Helm as chart manager
 - Cert Manager to mantain SSL certificates
+- Backblaze as S3 Object Storage
+- Cloudnative PG as Postgres Operator
