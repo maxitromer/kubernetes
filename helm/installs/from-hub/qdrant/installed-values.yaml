@@ -1,0 +1,111 @@
+# https://github.com/qdrant/qdrant-helm
+
+image:
+  repository: docker.io/qdrant/qdrant
+  pullPolicy: IfNotPresent
+  tag: "v1.12.5"
+
+env:
+  - name: QDRANT_ALLOW_RECOVERY_MODE
+    value: "true"
+
+service:
+  api_key:
+    secretKeyRef:
+      name: qdrant-api-key
+      key: api-key
+  read_only_api_key:
+    secretKeyRef:
+      name: qdrant-api-key
+      key: read-only-api-key
+
+livenessProbe:
+  enabled: true
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  periodSeconds: 15
+
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 15
+  periodSeconds: 10
+
+persistence:
+  accessModes: ["ReadWriteOnce"]
+  size: 20Gi # 1024Gi
+  storageClassName: longhorn-raid-ssd-cached-2-replicas # raid-ssd-cached-local-path
+  storageVolumeName: qdrant-storage  
+  annotations:
+    helm.sh/resource-policy: keep
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector:
+  kubernetes.io/arch: amd64 # A pod can only be scheduled on nodes that meet this label criteria.  
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 80
+        preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - r9-13
+      - weight: 50
+        preference:
+          matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - r9-11
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: ["qdrant"]
+          topologyKey: "kubernetes.io/hostname"
+
+    # podAntiAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #   - labelSelector:
+    #       matchExpressions:
+    #         - key: app.kubernetes.io/name
+    #           operator: In
+    #           values:
+    #             - '{{ include "qdrant.name" . }}'
+    #         - key: app.kubernetes.io/instance
+    #           operator: In
+    #           values:
+    #             - '{{ .Release.Name }}'
+    #     topologyKey: "kubernetes.io/hostname"
+
+config:
+  cluster:
+    enabled: false
+    p2p:
+      port: 6335
+    consensus:
+      tick_period_ms: 100
+
+
+metrics:
+  serviceMonitor:
+    enabled: false
+
+podDisruptionBudget:
+  enabled: false
+  maxUnavailable: 1 
